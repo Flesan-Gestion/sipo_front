@@ -1,0 +1,35 @@
+{
+  "name": "template_primevue_ts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:dev": "vite build --mode dev",
+    "build:qa": "vite build --mode qa",
+    "build:prod": "vite build --mode prod",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@types/node": "^20.14.2",
+    "axios": "^1.6.8",
+    "html5-qrcode": "^2.3.8",
+    "http-status-codes": "^2.3.0",
+    "pinia": "^2.1.7",
+    "primeflex": "^3.3.1",
+    "primeicons": "^6.0.1",
+    "primevue": "^3.43.0",
+    "tesseract.js": "^5.1.1",
+    "vue": "^3.3.11",
+    "vue-router": "^4.2.5",
+    "vue3-google-signin": "^2.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0",
+    "vue-tsc": "^1.8.25"
+  }
+}

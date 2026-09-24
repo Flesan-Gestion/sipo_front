@@ -1,0 +1,357 @@
+a {
+	text-decoration: none;
+	vertical-align: middle;
+	color: var(--sidebar-text-color);
+}
+
+ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.sidebar {
+	position: fixed;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 260px;
+	background-color: var(--sidebar-background-color);
+	display: flex;
+	flex-direction: column;
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+	overflow: hidden;
+	font-size: 12px;
+	border-top-right-radius: 0.5rem;
+	z-index: 1002;
+}
+
+.mininav .sidebar:hover {
+	width: 260px;
+}
+
+.mininav .sidebar:hover :is(.logo, nav ul ul a) {
+	display: flex;
+}
+
+.mininav .sidebar:hover :is(.logo) {
+	display: flex;
+}
+
+.mininav .sidebar:hover>nav a *:not(i:first-child),
+.mininav .sidebar:hover>nav .small {
+	opacity: 1;
+}
+
+.mininav .sidebar:hover .sign-out div {
+	opacity: 1 !important;
+}
+
+.brand {
+	flex: 0 auto;
+	height: 110px;
+	padding: 25px 27px 20px 25px;
+	border-bottom: 1px solid;
+	border-color: var(--sidebar-hover-color);
+	display: flex;
+}
+
+.brand :is(div, a) {
+	display: flex;
+	align-items: center;
+}
+
+.mininav .brand {
+	display: flex;
+	align-items: center;
+}
+
+.logo a {
+	font-weight: bold;
+	font-size: 1.5em;
+	color: white;
+}
+
+.logo span {
+	color: var(--sidebar-primary-color);
+}
+
+.trigger i,
+nav a i:first-child {
+	font-size: 20px;
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+}
+
+.trigger [name="menu-outline"],
+.mininav .trigger [name="chevron-back-outline"] {
+	display: none;
+}
+
+.mininav .trigger [name="menu-outline"] {
+	display: block;
+}
+
+/* Navigation */
+
+nav {
+	overflow-y: scroll;
+	overflow-x: hidden;
+}
+
+nav li a {
+	position: relative;
+	padding: 12px 21px;
+	display: flex;
+	flex: 0 0 100%;
+	align-items: center;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+
+	/* test */
+	margin-left: 7px;
+	border-radius: 0.5rem;
+}
+
+.collapse ul li {
+	margin-right: 7px;
+}
+
+.mininav nav li a,
+.mininav .sign-out a {
+	padding-left: 21px;
+}
+
+nav li :is(a:hover, .active) {
+	cursor: pointer;
+	background-color: var(--sidebar-hover-color);
+}
+
+nav li a>* {
+	display: flex;
+	align-items: center;
+}
+
+nav a i {
+	flex-shrink: 0;
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+}
+
+nav a i:first-child {
+	margin-right: 15px;
+	color: var(--sidebar-secondary-color);
+}
+
+nav li a span {
+	display: flex;
+	flex-grow: 1;
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+}
+
+nav li a:hover,
+.collapse a span {
+	color: var(--sidebar-hover-text-color);
+}
+
+.collapse>a>i:first-child {
+	color: var(--sidebar-primary-color);
+}
+
+.mininav .collapse>a>i:first-child {
+	color: var(--sidebar-secondary-color);
+}
+
+nav li a:hover::before {
+	background-color: var(--sidebar-primary-color);
+}
+
+nav :is(a:hover, .active) i:first-child,
+.trigger a:hover i {
+	color: var(--sidebar-primary-color);
+}
+
+nav li.small {
+	color: var(--sidebar-secondary-color);
+	text-transform: uppercase;
+	font-size: 10px;
+	margin: 20px 25px 5px;
+	letter-spacing: 2px;
+}
+
+/* Show submenu */
+
+nav li.has-child ul {
+	max-height: 0;
+	opacity: 0;
+	transition: all 0.2s ease-out;
+}
+
+nav li.collapse ul {
+	max-height: 100vh;
+	opacity: 1;
+	transition: all 0.5s ease-in;
+}
+
+.hidden-items ul {
+	display: none;
+}
+
+nav li.collapse i:last-child {
+	transform: rotate(-90deg);
+	-webkit-transform: rotate(-90deg);
+}
+
+/* Mini nav */
+
+.mininav .sidebar {
+	width: 70px;
+}
+
+.mininav :is(.logo, nav ul ul a) {
+	display: none;
+}
+
+.mininav nav a *:not(i:first-child),
+.mininav nav .small {
+	opacity: 0;
+}
+
+/* Scroll bar */
+nav::-webkit-scrollbar {
+	width: 7px;
+}
+
+nav::-webkit-scrollbar-thumb {
+	background-color: transparent;
+}
+
+nav:hover::-webkit-scrollbar-thumb {
+	background-color: var(--sidebar-scrollbar-color);
+	border-radius: 1rem;
+}
+
+.sidebar .pi-chevron-left {
+	font-size: 11px !important;
+}
+
+.sidebar i {
+	font-size: 14px !important;
+}
+
+/* Sign out */
+
+.sign-out {
+	width: 100%;
+
+	display: flex;
+	align-items: center;
+	flex: 0 auto;
+	height: 70px;
+	color: var(--sidebar-text-color);
+	background-color: var(--sidebar-hover-color);
+}
+
+.sign-out * {
+	transition: var(--sidebar-transition);
+	-webkit-transition: var(--sidebar-transition);
+}
+
+.sign-out div i:hover,
+.sign-out div span:hover {
+	color: var(--sidebar-hover-text-color);
+}
+
+.sign-out i:hover {
+	cursor: pointer;
+}
+
+.navbar {
+	flex: 1;
+}
+
+.mininav .sign-out-info-name {
+	opacity: 0;
+}
+
+.mininav .sign-out-info-image {
+	margin-left: 8px;
+}
+
+.mininav .sign-out-settings {
+	display: none !important;
+}
+
+.mininav .sidebar:hover .sign-out-settings {
+	display: flex !important;
+}
+
+.router-link-active {
+	background-color: var(--sidebar-hover-color);
+	color: white;
+}
+
+.router-link-active i {
+	color: var(--sidebar-primary-color) !important;
+}
+
+.parent-selected i:first-child {
+	color: var(--sidebar-primary-color) !important;
+}
+
+.parent-selected span {
+	color: white !important;
+}
+
+.hidden-items .parent-selected {
+	background-color: var(--sidebar-hover-color) !important;
+}
+
+.mininav .parent-selected {
+	background-color: var(--sidebar-hover-color) !important;
+}
+
+.mininav .collapse>a:hover>i:first-child {
+	color: var(--sidebar-primary-color) !important;
+}
+
+@media screen and (max-width: 1023px) {
+	.sidebar {
+		width: 0px !important;
+		z-index: 0;
+		pointer-events: none;
+	}
+
+	.floatnav .sidebar {
+		width: 260px !important;
+		z-index: 1002;
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+		pointer-events: auto;
+	}
+
+	.floatnav .sidebar :is(.logo, nav ul ul a) {
+		display: block;
+	}
+
+	.floatnav .sidebar>nav a *:not(i:first-child),
+	.floatnav .sidebar>nav .small {
+		opacity: 1;
+	}
+
+	.floatnav .sidebar .brand {
+		padding: 25px 27px 25px 25px;
+	}
+
+	.floatnav .sidebar .sign-out div {
+		opacity: 1 !important;
+	}
+
+	.mininav .sidebar {
+		width: 0 !important;
+	}
+}

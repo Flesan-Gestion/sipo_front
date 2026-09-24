@@ -1,0 +1,311 @@
+/* Custom classes */
+.display-grid-important {
+	display: grid !important;
+}
+
+.w-full-important {
+	width: 100% !important;
+}
+
+.no-wrap-container {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+.wrap-container {
+	word-break: break-all;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
+}
+
+.flex-center {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+/* Customizing existing classes in primevue */
+
+.grid {
+	margin-right: 0 !important;
+	margin-left: 0 !important;
+	margin-top: 0 !important;
+}
+
+.p-button {
+	padding: 0.55rem 0.75rem !important;
+}
+
+.p-progress-spinner-circle {
+	animation: none !important;
+}
+
+.p-column-filter-buttonbar {
+	display: grid !important;
+	column-gap: 1rem;
+	grid-template-columns: 1fr 1fr;
+}
+
+.p-column-filter-buttonbar .p-button {
+	padding: 0.5rem 0.8rem;
+}
+
+.p-selectbutton .p-button {
+	flex: 1;
+}
+
+.p-multiselect-label {
+	padding: 0.5rem !important;
+}
+
+.p-selectbutton>*:not(:first-child):not(:last-child) {
+	border-radius: 0 !important;
+}
+
+.p-selectbutton div:first-child {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+}
+
+.p-selectbutton div:last-child {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+}
+
+.p-calendar input {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+}
+
+.p-calendar-w-btn button {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+}
+
+.p-fileupload {
+	height: 100% !important;
+}
+
+.p-multiselect-filter-icon,
+.p-dropdown-clear-icon,
+.p-tree-filter-icon,
+.p-input-icon,
+.p-input-icon-left i,
+.p-input-icon-right i,
+.p-dropdown-filter-icon,
+.p-autocomplete-loader {
+	top: 28% !important;
+}
+
+.p-datatable .p-column-header-content {
+	justify-content: space-between !important;
+}
+
+.p-timeline-event .p-timeline-event-opposite {
+	display: none;
+}
+
+.p-tree {
+	padding: 0rem !important;
+	border: none !important;
+}
+
+.p-treenode-content {
+	padding: 0.1rem 0.3rem !important;
+}
+
+.p-tabview-header {
+	flex: 1;
+}
+
+.p-tabview-nav-link {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	padding: 0.75rem !important;
+}
+
+.p-tabview-panels {
+	padding: 1rem 0rem !important;
+}
+
+.p-confirm-popup {
+	overflow: hidden !important;
+	z-index: 1003 !important;
+}
+
+.p-timeline-event-content {
+	margin-bottom: 12px !important;
+	overflow: auto !important;
+}
+
+.p-toast {
+	z-index: 10000 !important;
+}
+
+.p-inputnumber-buttons-horizontal .p-inputnumber-button-up {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+}
+
+.p-inputnumber-buttons-horizontal .p-inputnumber-button-down {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+}
+
+.p-inputnumber-buttons-horizontal .p-inputnumber-input {
+	border-radius: 0 !important;
+}
+
+.p-accordion-content {
+	padding: 2rem 0.5rem !important;
+}
+
+ul.p-carousel-indicators {
+	display: none !important;
+}
+
+.p-carousel-content {
+	height: 100% !important;
+}
+
+.p-carousel-container {
+	height: 100% !important;
+	position: relative;
+}
+
+.p-carousel-items-container {
+	height: 100% !important;
+}
+
+.p-carousel-prev,
+.p-carousel-next {
+	position: absolute;
+	z-index: 100;
+	background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.p-carousel-prev {
+	left: 1rem;
+}
+
+.p-carousel-next {
+	right: 1rem;
+}
+
+/* Medidas para los autocomplete */
+.p-autocomplete-dropdown {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+}
+
+.p-autocomplete-dd-input {
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+}
+
+.p-autocomplete-empty-message {
+	padding: 0px 8px;
+}
+
+.p-paginator-rpp-options .p-dropdown-label {
+	display: flex;
+	align-items: center;
+}
+
+/* El texto en los botones para adjuntar archivos termina en puntos suspensivos en caso supere el ancho del botón*/
+.p-fileupload .p-button-label {
+	white-space: nowrap !important;
+	text-overflow: ellipsis !important;
+	overflow: hidden !important;
+}
+
+/* Medidas para los modal */
+.p-dialog-header {
+	padding: 1rem 1.5rem !important;
+}
+
+.p-dialog-footer {
+	padding: 1rem 1.5rem !important;
+}
+
+.p-dialog-content {
+	padding: 0 1.5rem !important;
+}
+
+/* Configuración para el overlay panel de las settings en el sidebar */
+.sign-out-overlay.p-overlaypanel {
+	background-color: var(--sidebar-hover-color) !important;
+	border: none;
+	overflow: hidden !important;
+}
+
+.sign-out-overlay.p-overlaypanel {
+	z-index: 1003 !important;
+}
+
+.p-overlaypanel-content {
+	padding: 0;
+}
+
+/* Ocultando el scroll de la etiqueta nav */
+nav{
+	overflow-y: hidden !important;
+}
+
+/* Contenedor responsive para tablas SIPO */
+.sip-page-shell {
+	min-height: calc(100vh - 11rem);
+}
+
+@media screen and (max-width: 1023px) {
+	.sip-page-shell {
+		min-height: 0;
+	}
+}
+
+.sipo-page-loader {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 2;
+	min-height: 100%;
+}
+
+.sip-table-scroll {
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch;
+	border: 1px solid #e5e7eb;
+	border-radius: 0.5rem;
+}
+
+.sip-table-scroll .p-datatable {
+	border-radius: 0.5rem;
+}
+
+.custom-scrollbar {
+	scrollbar-width: thin;
+	scrollbar-color: #9ca3af transparent;
+}
+
+.touch-pan-x {
+	touch-action: pan-x;
+}
+
+@media screen and (max-width: 1023px) {
+	.sip-table-scroll {
+		margin-bottom: 0.5rem;
+	}
+
+	.sip-table-scroll .p-paginator {
+		flex-wrap: wrap;
+		justify-content: center;
+		row-gap: 0.5rem;
+	}
+}

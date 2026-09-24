@@ -1,0 +1,74 @@
+#background-image-title {
+    background: url('../../assets/img/fondo_texto_foto.png');
+    background-repeat: repeat-x;
+    background-size: cover;
+    background-position-x: left;
+    bottom: 3rem;
+}
+
+#images-gray-squares {
+    background: url('../../assets/img/background.png');
+    background-repeat: repeat-x;
+    background-size: cover;
+    background-position-x: center;
+}
+
+.background-text-color {
+    background-color: #f41b35;
+}
+
+.background-text {
+    background: linear-gradient(to right,
+            #0c0c0cb5,
+            #0c0c0c05,
+            rgb(0 0 0 / 0%));
+}
+
+.color-title-background {
+    color: #7b7873;
+}
+
+.form-container {
+    max-width: 60rem;
+}
+
+
+
+@media screen and (min-width: 2560px) {
+    #login-panel {
+        width: 30%;
+    }
+
+    #image-panel {
+        width: 70%;
+    }
+
+    #image-title-panel {
+        font-size: 2rem !important;
+    }
+
+    #login-slot {
+        width: 30rem !important;
+    }
+
+    #login-slot-portal-image {
+        height: 7rem !important;
+    }
+
+    #login-slot-group-image {
+        width: 20rem !important;
+        margin-top: 2rem;
+    }
+
+}
+
+@media screen and (max-width: 1366px) { 
+    #image-title-panel {
+        font-size: 1.3rem !important;
+    }
+    
+    #login-slot {
+
+        transform: translateY(-1.5rem);
+    }
+}

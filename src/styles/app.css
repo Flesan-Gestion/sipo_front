@@ -1,0 +1,43 @@
+@import "./theme.css";
+@import "primeicons/primeicons.css";
+@import "primeflex/primeflex.css";
+@import "./custom.css";
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+*,
+::before,
+::after {
+    box-sizing: border-box;
+}
+
+body .p-inputtext, body .p-inputgroup .p-inputtext, body .p-inputgroup .p-inputgroup-addon {
+    padding: .5rem !important;
+}
+
+
+html {
+    font-size: 12px;
+}
+
+::-webkit-scrollbar {
+    font-size: 2px !important;
+    width: 7px !important;
+    height: 7px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888 !important; 
+    border-radius: 10px !important; 
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555 !important; 
+}

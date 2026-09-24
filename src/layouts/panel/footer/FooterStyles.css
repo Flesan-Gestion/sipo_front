@@ -1,0 +1,18 @@
+.footer {
+    background-color: var(--sidebar-hover-color);
+    height: 70px;
+    color: var(--sidebar-hover-text-color);
+    font-size: 12px;
+}
+
+@media screen and (max-width: 600px) {
+    .footer {
+        font-size: 10px;
+    }
+}
+
+@media screen and (max-width: 370px) {
+    .footer {
+        font-size: 8px;
+    }
+}
