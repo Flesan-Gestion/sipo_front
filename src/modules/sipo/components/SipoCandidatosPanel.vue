@@ -7,7 +7,7 @@
 					v-if="showEnviarAprobacion"
 					:label="enviarAprobacionLabel"
 					icon="pi pi-send"
-					severity="info"
+					severity="success"
 					size="small"
 					:loading="sendingApproval"
 					@click="confirmEnviarAprobacion"
@@ -16,7 +16,7 @@
 					v-if="showAprobarContratacion"
 					label="APROBAR CONTRATACIÓN"
 					icon="pi pi-check-circle"
-					class="btn-aprobar-contratacion"
+					severity="success"
 					size="small"
 					:loading="approving"
 					@click="confirmAprobarContratacion"
@@ -83,11 +83,11 @@
 								<button
 									v-if="canEdit"
 									type="button"
-									class="action-btn action-btn--edit p-2"
+									class="action-btn action-btn--edit bg-blue-700 p-2"
 									title="Editar candidato"
 									@click="openEdit(row)"
 								>
-									<i class="pi pi-pencil text-base" />
+									<i class="pi pi-pencil" />
 								</button>
 								<button
 									v-if="canEdit"
@@ -118,6 +118,7 @@
 			v-model:visible="showDialog"
 			:sip-id="sipId"
 			:empresa-rut="empresaRut"
+			:centro-costo="centroCosto"
 			:cargo-options="cargoOptions"
 			:candidato="editingCandidato"
 			@saved="load"
@@ -130,6 +131,7 @@
 			:confirm-label="cambioEstadoConfirmLabel"
 			:confirm-severity="cambioEstadoSeverity"
 			:saving="sendingApproval"
+			:require-comentario="false"
 			@confirm="onConfirmCambioEstado"
 		/>
 	</div>
@@ -158,6 +160,7 @@ const props = defineProps<{
 	accionesEstado?: SipoAccionEstado[];
 	cargoOptions?: { label: string; value: string }[];
 	empresaRut?: string | null;
+	centroCosto?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -183,14 +186,15 @@ const pasarRevisionAction = computed(() =>
 const cambioEstadoTitle = computed(() => pendingEstadoAction.value?.label || 'Cambio de estado');
 const cambioEstadoMessage = computed(() => {
 	if (pendingEstadoAction.value?.codigo === 'pasar_revision') {
-		return 'La solicitud pasará a estado En Revisión. Indique un comentario / observación.';
+		return '¿Confirma enviar la solicitud a aprobación? Pasará a estado En Revisión.';
 	}
-	return 'Indique un comentario / observación para el cambio de estado.';
+	return '¿Confirma el cambio de estado de la solicitud?';
 });
 const cambioEstadoConfirmLabel = computed(() => pendingEstadoAction.value?.label || 'Confirmar');
-const cambioEstadoSeverity = computed(
-	() => pendingEstadoAction.value?.severity || 'info'
-);
+const cambioEstadoSeverity = computed(() => {
+	if (pendingEstadoAction.value?.codigo === 'pasar_revision') return 'success';
+	return pendingEstadoAction.value?.severity || 'success';
+});
 
 const showAprobarContratacion = computed(() => {
 	if (!props.canApproveContratacion) return false;
@@ -277,7 +281,7 @@ const confirmDelete = (row: SipoCandidato) => {
 const confirmAprobarContratacion = () => {
 	const total = candidatos.value.length;
 	global.utl.showConfirmation({
-		message: `Se procesará la contratación y envío a SAP de todos los candidatos activos en el shortlist (${total} candidato(s)).`,
+		message: `Se procesará la contratación de todos los candidatos (${total}).`,
 		accept: async () => {
 			approving.value = true;
 			global.utl.showLoader();
@@ -400,15 +404,10 @@ defineExpose({ load });
 }
 
 .action-btn--edit {
-	background-color: #00a65a;
+	background-color: #295bac;
 }
 
 .action-btn--delete {
 	background-color: #dc2626;
-}
-
-:deep(.btn-aprobar-contratacion) {
-	background-color: #2563eb !important;
-	border-color: #2563eb !important;
 }
 </style>

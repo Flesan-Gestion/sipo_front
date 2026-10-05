@@ -8,6 +8,11 @@ import { sipoRoutes } from '../modules/sipo/routes';
 
 export const routes:RouteRecordRaw[] = [
     {
+        path: '/portal-candidato/:token',
+        name: 'SipoPublicCandidatePortal',
+        component: () => import('../modules/sipo/views/SipoPublicCandidatePortal.vue'),
+    },
+    {
         path: '/',
         redirect: '/panel/sipo'
     },

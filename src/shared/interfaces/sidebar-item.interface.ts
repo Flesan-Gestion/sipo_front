@@ -5,6 +5,7 @@ export interface SidebarItemInterface {
     pathName?: string
     icon?: string
     sipoRolAdminOnly?: boolean
+    ocultoSupervisor?: boolean
     children?: SidebarItemChildrenInterface[]
 }
 

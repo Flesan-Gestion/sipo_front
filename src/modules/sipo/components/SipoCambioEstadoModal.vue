@@ -14,7 +14,7 @@
 
 		<div class="flex flex-column gap-3">
 			<p v-if="message" class="m-0 text-sm text-color-secondary">{{ message }}</p>
-			<div class="flex flex-column gap-2">
+			<div v-if="requireComentario" class="flex flex-column gap-2">
 				<label for="cambio-estado-comentario">Comentario / Observación (*)</label>
 				<Textarea
 					id="cambio-estado-comentario"

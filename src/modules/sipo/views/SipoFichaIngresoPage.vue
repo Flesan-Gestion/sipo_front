@@ -10,11 +10,11 @@
 					</div>
 				</div>
 				<h2 class="m-0 text-center text-xl font-bold uppercase text-900">
-					{{ isEditMode ? 'Editar Ficha de Ingreso de Personal' : 'Ficha de Ingreso de Personal' }}
+					{{ editingId ? `Ficha de Ingreso de Personal #${editingId}` : 'Ficha de Ingreso de Personal' }}
 				</h2>
 			</div>
 
-			<section class="ficha-section border-1 border-300 border-round bg-white p-3">
+			<section v-show="paso === 'rrhh' && !isSupervisor" class="ficha-section border-1 border-300 border-round bg-white p-3">
 				<h3 class="ficha-section__title">
 					1. Datos a completar por Recursos Humanos y Área Solicitante
 				</h3>
@@ -79,24 +79,22 @@
 						/>
 					</div>
 					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Cargo</label>
+						<label class="font-semibold text-sm">(*) Jefe Directo</label>
 						<Dropdown
-							v-model="form.seccion1.cargo"
-							:options="cargoOptions"
+							v-model="form.seccion1.jefeUserId"
+							:options="jefesOptions"
 							optionLabel="label"
-							optionValue="value"
+							optionValue="user_id"
 							filter
 							showClear
-							placeholder="Seleccionar cargo"
-							:class="fc('cargo')"
-							:loading="loadingCargos"
-							:disabled="!form.seccion1.razonSocial"
-							emptyMessage="Sin cargos para esta razón social"
+							placeholder="Seleccionar"
+							:class="fc('jefeUserId')"
+							:loading="loadingJefes"
+							:disabled="!form.seccion1.centroCosto"
+							emptyMessage="Sin personal activo en este centro de costo"
+							emptyFilterMessage="Sin resultados"
+							@change="onJefeChange"
 						/>
-					</div>
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Fecha de ingreso</label>
-						<Calendar v-model="form.seccion1.fechaIngreso" dateFormat="dd-mm-yy" :class="fc('fechaIngreso')" showIcon />
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">(*) Correo Jefe Directo</label>
@@ -134,30 +132,178 @@
 							{{ emailErrors.correoAdminObra }}
 						</small>
 					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Cuenta de gasto</label>
+						<Dropdown
+							v-model="form.seccion3.cuentaGasto"
+							:options="maestros.cuentas_gasto"
+							optionLabel="label"
+							optionValue="value"
+							filter
+							placeholder="Seleccionar"
+							:class="fc('cuentaGasto')"
+							showClear
+						/>
+					</div>
 				</div>
 			</section>
 
-		<section class="ficha-section border-1 border-300 border-round bg-white p-3">
-			<div class="flex align-items-center justify-content-between mb-2">
-				<h3 class="ficha-section__title m-0">2. Datos a completar por Nuevo Colaborador</h3>
+			<section
+				v-show="paso === 'supervisor' || paso === 'colaborador' || (paso === 'rrhh' && !isSupervisor)"
+				class="ficha-section border-1 border-300 border-round bg-white p-3"
+			>
+				<h3 class="ficha-section__title">Datos a completar por Supervisor</h3>
+				<div class="grid formgrid p-fluid">
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Cargo</label>
+						<Dropdown
+							v-model="form.seccion1.cargo"
+							:options="cargoOptions"
+							optionLabel="label"
+							optionValue="value"
+							filter
+							showClear
+							placeholder="Seleccionar cargo"
+							:class="fc('cargo')"
+							:loading="loadingCargos"
+							:disabled="bloqueoCamposSupervisor"
+							emptyMessage="Sin cargos disponibles"
+						/>
+					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Fecha de ingreso</label>
+						<Calendar v-model="form.seccion1.fechaIngreso" dateFormat="dd-mm-yy" :class="fc('fechaIngreso')" showIcon :disabled="bloqueoCamposSupervisor" />
+					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Correo Electrónico del Colaborador</label>
+						<InputText
+							v-model="form.seccion1.correoColaborador"
+							type="email"
+							:class="fc('correoColaborador')"
+							placeholder="correo@empresa.cl"
+							:disabled="bloqueoCamposSupervisor"
+						/>
+					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Sueldo Líquido (NO costo empresa)</label>
+						<InputNumber
+							v-model="form.seccion3.sueldoLiquido"
+							mode="currency"
+							currency="CLP"
+							locale="es-CL"
+							:min="0"
+							:max="SUELDO_MAX"
+							:class="fc('sueldoLiquido', sueldoError)"
+							:disabled="bloqueoCamposSupervisor"
+							@update:modelValue="onSueldoChange"
+						/>
+						<small v-if="sueldoError" class="p-error block mt-1">{{ sueldoError }}</small>
+						<small v-else class="text-color-secondary block mt-1">Mínimo $585.000</small>
+					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Tipo de contrato</label>
+						<Dropdown
+							v-model="form.seccion3.tipoContrato"
+							:options="tiposContratoOptions"
+							optionLabel="label"
+							optionValue="value"
+							:class="fc('tipoContrato')"
+							:disabled="bloqueoCamposSupervisor"
+							@change="onTipoContratoChange"
+						/>
+					</div>
+					<div v-if="isObraFaena" class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) HITO</label>
+						<InputText v-model="hitoTexto" :class="fc('hitoTexto')" :disabled="bloqueoCamposSupervisor" />
+					</div>
+					<div v-if="isObraFaena" class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Fecha de término HITO</label>
+						<Calendar v-model="fechaTerminoHito" dateFormat="dd-mm-yy" showIcon :class="fc('fechaTerminoHito')" :disabled="bloqueoCamposSupervisor" />
+					</div>
+					<div v-if="isPlazoFijo" class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Fecha término plazo fijo</label>
+						<Calendar v-model="plazoFijoFecha" dateFormat="dd-mm-yy" showIcon :class="fc('plazoFijoFecha')" :disabled="bloqueoCamposSupervisor" />
+					</div>
+					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">(*) Horario de trabajo</label>
+						<Dropdown
+							v-model="form.seccion3.horario"
+							:options="horarioOptions"
+							optionLabel="label"
+							optionValue="value"
+							filter
+							placeholder="Seleccionar horario"
+							:class="fc('horario')"
+							showClear
+							:disabled="bloqueoCamposSupervisor"
+							:loading="loadingHorarios"
+							emptyMessage="Sin horarios disponibles"
+						/>
+					</div>
+					<div class="field col-12">
+						<label class="font-semibold text-sm">Observaciones</label>
+						<Textarea v-model="form.seccion3.observaciones" rows="4" class="w-full" autoResize :disabled="bloqueoCamposSupervisor" />
+					</div>
+				</div>
+			</section>
+
+		<section v-show="paso === 'enlace'" class="ficha-section border-1 border-300 border-round bg-white p-4">
+			<h3 class="ficha-section__title">Datos ingresados por el Supervisor</h3>
+			<div class="grid mt-3">
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Cargo</span><div>{{ form.seccion1.cargo || '—' }}</div></div>
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Fecha de ingreso</span><div>{{ formatFechaCl(form.seccion1.fechaIngreso) }}</div></div>
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Correo del colaborador</span><div>{{ form.seccion1.correoColaborador || '—' }}</div></div>
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Sueldo líquido</span><div>{{ formatSueldoPaso(form.seccion3.sueldoLiquido) }}</div></div>
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Tipo de contrato</span><div>{{ form.seccion3.tipoContrato || '—' }}</div></div>
+				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Horario</span><div>{{ labelOf(horarioOptions, form.seccion3.horario) || form.seccion3.horario || '—' }}</div></div>
+				<div v-if="isPlazoFijo" class="col-12 md:col-4"><span class="text-color-secondary text-sm">Término plazo fijo</span><div>{{ formatFechaCl(plazoFijoFecha) }}</div></div>
+				<div v-if="isObraFaena" class="col-12 md:col-4"><span class="text-color-secondary text-sm">HITO</span><div>{{ hitoTexto || '—' }}</div></div>
+				<div v-if="isObraFaena" class="col-12 md:col-4"><span class="text-color-secondary text-sm">Fecha término HITO</span><div>{{ formatFechaCl(fechaTerminoHito) }}</div></div>
+				<div v-if="form.seccion3.observaciones" class="col-12"><span class="text-color-secondary text-sm">Observaciones</span><div>{{ form.seccion3.observaciones }}</div></div>
+			</div>
+			<div class="flex flex-column align-items-center gap-3 mt-4 pt-4 border-top-1 border-300">
+				<img v-if="enlaceQr" :src="enlaceQr" alt="Código QR" class="w-12rem" />
+				<a
+					v-if="enlaceUrl"
+					:href="enlaceUrl"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="m-0 text-sm text-center"
+				>{{ enlaceUrl }}</a>
+				<div class="flex gap-2">
+					<Button label="Copiar enlace" icon="pi pi-copy" size="small" @click="copiarEnlace" />
+					<Button label="Volver" severity="secondary" outlined size="small" @click="paso = 'supervisor'" />
+				</div>
+				<small class="text-color-secondary">Esperando los datos del colaborador…</small>
+			</div>
+		</section>
+
+		<section
+			v-show="(!isSupervisor && paso === 'rrhh') || (isSupervisor && paso === 'colaborador')"
+			class="ficha-section border-1 border-300 border-round bg-white p-3"
+		>
+			<div class="flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
+				<h3 class="ficha-section__title m-0">2. Datos del Nuevo Colaborador</h3>
 				<Button
+					v-if="!isSupervisor"
 					label="Escanear Cédula"
 					icon="pi pi-id-card"
 					size="small"
 					@click="qrScannerVisible = true"
 				/>
 			</div>
+			<fieldset :disabled="isSupervisor" class="ficha-fieldset-readonly border-none p-0 m-0">
 			<div class="grid formgrid p-fluid">
 					<div class="field col-12 md:col-4">
 						<label class="font-semibold text-sm">(*) Nombres</label>
 						<InputText v-model="form.seccion2.nombres" :class="fc('nombres')" />
 					</div>
 					<div class="field col-12 md:col-4">
-						<label class="font-semibold text-sm">(*) Apellido Paterno</label>
+						<label class="font-semibold text-sm">(*) Primer Apellido</label>
 						<InputText v-model="form.seccion2.apellidoPaterno" :class="fc('apellidoPaterno')" />
 					</div>
 					<div class="field col-12 md:col-4">
-						<label class="font-semibold text-sm">(*) Apellido Materno</label>
+						<label class="font-semibold text-sm">(*) Segundo Apellido</label>
 						<InputText v-model="form.seccion2.apellidoMaterno" :class="fc('apellidoMaterno')" />
 					</div>
 					<div class="field col-12 md:col-4">
@@ -445,140 +591,66 @@
 						/>
 					</div>
 				</div>
+			</fieldset>
 			</section>
 
-			<section class="ficha-section border-1 border-300 border-round bg-white p-3">
-				<h3 class="ficha-section__title">3. Datos de Contratación y Documentos</h3>
-				<div class="grid formgrid p-fluid">
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Sueldo Líquido (NO costo empresa)</label>
-						<InputNumber
-							v-model="form.seccion3.sueldoLiquido"
-							mode="currency"
-							currency="CLP"
-							locale="es-CL"
-							:min="0"
-							:max="SUELDO_MAX"
-							:class="fc('sueldoLiquido', sueldoError)"
-							@update:modelValue="onSueldoChange"
-						/>
-						<small v-if="sueldoError" class="p-error block mt-1">{{ sueldoError }}</small>
-						<small v-else class="text-color-secondary block mt-1">Mínimo $581.000</small>
+			<section
+				v-show="(!isSupervisor && paso === 'rrhh') || (isSupervisor && paso === 'colaborador')"
+				class="ficha-section border-1 border-300 border-round bg-white p-3"
+			>
+				<h3 class="ficha-section__title">Documentos del colaborador</h3>
+				<div class="grid formgrid">
+					<div v-for="doc in documentosSlots" :key="doc.key" class="field col-12 md:col-6 flex flex-column gap-1">
+						<label class="font-semibold text-sm mb-0">{{ doc.label }}</label>
+						<button
+							v-if="docMeta[doc.key]?.url"
+							type="button"
+							class="p-0 border-none bg-transparent text-primary underline cursor-pointer text-left text-sm align-self-start"
+							@click="openDocumento(docMeta[doc.key].url)"
+						>
+							{{ docMeta[doc.key].name }}
+						</button>
+						<small v-else-if="docMeta[doc.key]" class="text-color-secondary">
+							{{ docMeta[doc.key].name }}
+						</small>
+						<small v-else class="text-color-secondary">Sin archivo</small>
 					</div>
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Cuenta de gasto</label>
-						<Dropdown
-							v-model="form.seccion3.cuentaGasto"
-							:options="maestros.cuentas_gasto"
-							optionLabel="label"
-							optionValue="value"
-							filter
-							placeholder="Seleccionar"
-							:class="fc('cuentaGasto')"
-							showClear
-						/>
-					</div>
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Tipo de contrato</label>
-						<Dropdown
-							v-model="form.seccion3.tipoContrato"
-							:options="tiposContratoOptions"
-							optionLabel="label"
-							optionValue="value"
-							:class="fc('tipoContrato')"
-							@change="onTipoContratoChange"
-						/>
-					</div>
-					<div v-if="isObraFaena" class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) HITO</label>
-						<InputText v-model="hitoTexto" :class="fc('hitoTexto')" />
-					</div>
-					<div v-if="isObraFaena" class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Fecha de término HITO</label>
-						<Calendar
-							v-model="fechaTerminoHito"
-							dateFormat="dd-mm-yy"
-							showIcon
-							:class="fc('fechaTerminoHito')"
-						/>
-					</div>
-					<div v-if="isPlazoFijo" class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Fecha término plazo fijo</label>
-						<Calendar
-							v-model="plazoFijoFecha"
-							dateFormat="dd-mm-yy"
-							showIcon
-							:class="fc('plazoFijoFecha')"
-						/>
-					</div>
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Horario de trabajo</label>
-						<Dropdown
-							v-model="form.seccion3.horario"
-							:options="horarioOptions"
-							optionLabel="label"
-							optionValue="value"
-							filter
-							placeholder="Seleccionar horario"
-							:class="fc('horario')"
-							showClear
-							:loading="loadingHorarios"
-							emptyMessage="Sin horarios disponibles"
-						/>
-					</div>
-				</div>
-
-				<div class="mt-3">
-					<h4 class="ficha-subsection__title">Documentos a Adjuntar</h4>
-					<div class="grid formgrid">
-						<div v-for="doc in documentosSlots" :key="doc.key" class="field col-12 md:col-6">
-							<label class="font-semibold text-sm">{{ doc.label }}</label>
-							<div class="flex flex-column gap-2">
-								<input
-									type="file"
-									accept=".pdf,.png,.jpg,.jpeg,.webp"
-									:class="['w-full', { 'p-invalid': fieldErrors[doc.key] }]"
-									:disabled="uploadingDoc === doc.key"
-									@change="(e) => onFileSelected(e, doc.key)"
-								/>
-								<small v-if="docMeta[doc.key]" class="text-color-secondary">
-									{{ docMeta[doc.key].name }}
-									<span v-if="docMeta[doc.key].sizeMb"> · {{ docMeta[doc.key].sizeMb }} MB</span>
-								</small>
-								<small v-if="docErrors[doc.key]" class="p-error">{{ docErrors[doc.key] }}</small>
-								<small v-else-if="fieldErrors[doc.key]" class="p-error">{{ fieldErrors[doc.key] }}</small>
-								<div v-if="uploadingDoc === doc.key" class="flex align-items-center gap-2">
-									<ProgressSpinner style="width: 20px; height: 20px" />
-									<span class="text-sm">Procesando...</span>
-								</div>
-							</div>
-						</div>
-					</div>
-					<small class="text-color-secondary">Máximo 4 MB · Formatos: pdf, png, jpg, jpeg, webp</small>
-				</div>
-
-				<div class="field mt-3">
-					<label class="font-semibold text-sm">Observaciones</label>
-					<Textarea v-model="form.seccion3.observaciones" rows="4" class="w-full" autoResize />
 				</div>
 			</section>
 
 			<div class="ficha-actions flex flex-wrap justify-content-end gap-2 no-print">
 				<Button
-					label="Ver Historial"
-					icon="pi pi-history"
+					label="Volver"
+					icon="pi pi-arrow-left"
 					severity="secondary"
 					outlined
 					@click="router.push({ name: 'SipoFichaIngresoHistorial' })"
 				/>
-				<Button label="Imprimir / Exportar" icon="pi pi-print" severity="secondary" outlined @click="onPrint" />
 				<Button
-					:label="isEditMode ? 'Guardar Cambios' : 'Guardar Ficha'"
-					icon="pi pi-save"
+					v-if="paso === 'rrhh' && !isSupervisor"
+					label="Imprimir / Exportar"
+					icon="pi pi-print"
+					severity="secondary"
+					outlined
+					@click="onPrint"
+				/>
+				<Button
+					v-if="paso === 'supervisor' && (isSupervisor || !isEditMode)"
+					label="Siguiente"
+					icon="pi pi-arrow-right"
+					iconPos="right"
+					severity="success"
+					:loading="generandoQr"
+					@click="generarEnlaceCandidato"
+				/>
+				<Button
+					v-if="paso === 'rrhh' && puedeEnviarJefe && !isSupervisor"
+					label="Enviar a Jefe de Terreno"
+					icon="pi pi-send"
 					severity="success"
 					:loading="saving"
 					:disabled="isSavingBlocked"
-					@click="onSave"
+					@click="enviarAJefe"
 				/>
 			</div>
 		</div>
@@ -588,12 +660,31 @@
 		v-model:visible="qrScannerVisible"
 		@scanned="onCedulaScanned"
 	/>
+	<Dialog v-model:visible="enlaceVisible" modal header="Enlace del colaborador" :style="{ width: '26rem' }">
+		<div class="flex flex-column align-items-center gap-3">
+			<img v-if="enlaceQr" :src="enlaceQr" alt="Código QR" class="w-12rem" />
+			<a
+				v-if="enlaceUrl"
+				:href="enlaceUrl"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="m-0 text-sm text-center word-break"
+			>{{ enlaceUrl }}</a>
+			<Button label="Copiar enlace" icon="pi pi-copy" size="small" @click="copiarEnlace" />
+			<small class="text-color-secondary text-center">
+				Cuando el colaborador guarde, esta sección se actualiza sola.
+			</small>
+		</div>
+	</Dialog>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
 import { useGlobalStore } from '../../../store/global';
+import { useSecurityStore } from '../../../store/security';
+import { RolesEnum } from '../../../shared/enums/roles.enum';
 import { useToastStore } from '../../../store/toast';
 import {
 	ToastGroupEnum,
@@ -612,11 +703,26 @@ const JUBILADO_OPTIONS = [
 import SipoQrScannerModal, { type CedulaData } from '../components/SipoQrScannerModal.vue';
 import { formatPersonName, missingCedulaFields } from '../utils/parseCedulaAnverso';
 import { findOptionValue } from '../utils/mapFichaToCandidato';
-import logoGrupoFicha from '../../../assets/img/logo_grupo_flesan_ficha.png';
+import logoGrupoFicha from '../../../assets/img/logo_grupo_flesan.png';
 
 const qrScannerVisible = ref(false);
+const generandoQr = ref(false);
+const paso = ref<'supervisor' | 'enlace' | 'rrhh' | 'colaborador'>('supervisor');
+const security = useSecurityStore();
+const isSupervisor = computed(
+	() => Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR
+);
+const bloqueoCamposSupervisor = computed(() =>
+	isSupervisor.value ? paso.value !== 'supervisor' : paso.value === 'rrhh'
+);
+const fichaEstado = ref('');
+const puedeEnviarJefe = computed(() => fichaEstado.value === 'PENDIENTE_RRHH');
+const enlaceVisible = ref(false);
+const enlaceUrl = ref('');
+const enlaceQr = ref('');
+let fichaPoll: ReturnType<typeof setInterval> | null = null;
 
-const SUELDO_MIN = 581_000;
+const SUELDO_MIN = 585_000;
 const SUELDO_MAX = 99_999_999;
 const TELEFONO_PREFIX = '569';
 const ALLOWED_EXT = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp']);
@@ -643,6 +749,8 @@ const isEditMode = computed(() => route.name === 'SipoFichaIngresoEdit' && editi
 
 const loadingMaestros = ref(false);
 const loadingCargos = ref(false);
+const loadingJefes = ref(false);
+const jefesOptions = ref<{ user_id: string; nombre: string; correo: string; label: string }[]>([]);
 const saving = ref(false);
 const sueldoError = ref('');
 const rutWarning = ref('');
@@ -666,7 +774,7 @@ const validatingEmail = reactive<Record<EmailFieldKey, boolean>>({
 });
 
 const docErrors = reactive<Record<string, string>>({});
-const docMeta = reactive<Record<string, { name: string; sizeMb: string }>>({});
+const docMeta = reactive<Record<string, { name: string; sizeMb: string; url?: string }>>({});
 
 const maestros = reactive<Record<string, any[]>>({
 	afps: [],
@@ -708,6 +816,10 @@ const form = reactive({
 		fechaIngreso: null as Date | null,
 		correoJefeDirecto: '',
 		correoAdminObra: '',
+		jefeUserId: null as string | null,
+		jefeNombre: null as string | null,
+		jefeCorreo: null as string | null,
+		correoColaborador: '',
 	},
 	seccion2: {
 		nombres: '',
@@ -820,9 +932,11 @@ const validateRequiredFields = (): boolean => {
 		['centroCosto', s1.centroCosto],
 		['descripcionCentroCosto', s1.descripcionCentroCosto || s1.centroCosto],
 		['cargo', s1.cargo],
+		['jefeUserId', s1.jefeUserId],
 		['fechaIngreso', s1.fechaIngreso],
 		['correoJefeDirecto', s1.correoJefeDirecto],
 		['correoAdminObra', s1.correoAdminObra],
+		['correoColaborador', s1.correoColaborador],
 		['nombres', s2.nombres],
 		['apellidoPaterno', s2.apellidoPaterno],
 		['apellidoMaterno', s2.apellidoMaterno],
@@ -1134,11 +1248,11 @@ const onCedulaScanned = async (data: CedulaData) => {
 	}
 	if (data.apellidoPaterno && data.apellidoPaterno.trim().length >= 3) {
 		form.seccion2.apellidoPaterno = formatPersonName(data.apellidoPaterno);
-		filled.push('Apellido paterno');
+		filled.push('Primer Apellido');
 	}
 	if (data.apellidoMaterno && data.apellidoMaterno.trim().length >= 3) {
 		form.seccion2.apellidoMaterno = formatPersonName(data.apellidoMaterno);
-		filled.push('Apellido materno');
+		filled.push('Segundo Apellido');
 	}
 	if (data.genero) {
 		form.seccion2.genero = normalizeGeneroValue(data.genero);
@@ -1226,7 +1340,10 @@ const onRutBlur = async () => {
 
 	try {
 		const response = await SipoService.validarRut(formatted);
-		if (response?.status !== 200) return;
+		if (response?.status !== 200) {
+			rutWarning.value = 'No se pudo verificar el RUT en SAP. Intente nuevamente.';
+			return;
+		}
 		const data = response.data;
 		if (data?.activo_ibuilder_sap && data.mensaje) {
 			rutWarning.value = data.mensaje;
@@ -1257,12 +1374,18 @@ const onTelefonoInput = (event: Event) => {
 		: '';
 };
 
+const soloGrupo2 = (lista: SipoMaestroEmpresa[] | undefined) =>
+	(lista || []).filter((e) => e.external_code_pais === EXTERNAL_CODE_PAIS_GRUPO_2);
+
 const loadEmpresas = async (pais?: string) => {
 	loadingMaestros.value = true;
 	try {
-		const response = await SipoService.getMaestros(undefined, pais || selectedPais.value);
+		const response = await SipoService.getMaestros(
+			undefined,
+			pais || EXTERNAL_CODE_PAIS_GRUPO_2
+		);
 		if (response?.status === 200) {
-			empresas.value = response.data?.empresas ?? [];
+			empresas.value = soloGrupo2(response.data?.empresas);
 		}
 	} finally {
 		loadingMaestros.value = false;
@@ -1274,9 +1397,8 @@ const loadCargosYObras = async (rut: string) => {
 	try {
 		const response = await SipoService.getMaestros(rut, selectedPais.value);
 		if (response?.status === 200) {
-			empresas.value = response.data?.empresas?.length
-				? response.data.empresas
-				: empresas.value;
+			const filtradas = soloGrupo2(response.data?.empresas);
+			empresas.value = filtradas.length ? filtradas : empresas.value;
 			ubicaciones.value = response.data?.ubicaciones ?? [];
 			cargos.value = response.data?.cargos ?? [];
 		}
@@ -1289,6 +1411,9 @@ const loadCandidatoMaestros = async () => {
 	const response = await SipoService.getCandidatoMaestros();
 	if (response?.status === 200 && response.data) {
 		Object.assign(maestros, response.data);
+		if (!cargos.value.length && Array.isArray(response.data.cargos)) {
+			cargos.value = response.data.cargos;
+		}
 	}
 };
 
@@ -1296,7 +1421,6 @@ const onRazonSocialChange = async () => {
 	form.seccion1.obra = null;
 	form.seccion1.centroCosto = null;
 	form.seccion1.descripcionCentroCosto = null;
-	form.seccion1.cargo = null;
 	form.seccion3.horario = null;
 	ubicaciones.value = [];
 	cargos.value = [];
@@ -1347,10 +1471,51 @@ const loadHorariosEmpresa = async (empresaId: string) => {
 
 const onCentroCostoChange = () => {
 	form.seccion1.descripcionCentroCosto = form.seccion1.centroCosto;
+	form.seccion1.jefeUserId = null;
+	form.seccion1.jefeNombre = null;
+	form.seccion1.jefeCorreo = null;
+	void loadJefes();
+};
+
+const onJefeChange = () => {
+	const uid = String(form.seccion1.jefeUserId || '');
+	const item = jefesOptions.value.find((j) => j.user_id === uid);
+	form.seccion1.jefeNombre = item?.nombre || null;
+	form.seccion1.jefeCorreo = item?.correo || null;
+	form.seccion1.correoJefeDirecto = item?.correo || '';
+	clearEmailError('correoJefeDirecto');
+};
+
+const ensureJefeOption = () => {
+	const uid = String(form.seccion1.jefeUserId || '').trim();
+	if (!uid) return;
+	if (jefesOptions.value.some((j) => j.user_id === uid)) return;
+	const nombre = String(form.seccion1.jefeNombre || '').trim();
+	const correo = String(form.seccion1.jefeCorreo || '').trim();
+	const label = nombre && correo ? `${nombre} (${correo})` : nombre || correo || uid;
+	jefesOptions.value = [{ user_id: uid, nombre, correo, label }, ...jefesOptions.value];
+};
+
+const loadJefes = async () => {
+	const cc = (form.seccion1.centroCosto || '').trim();
+	jefesOptions.value = [];
+	if (!cc) return;
+	loadingJefes.value = true;
+	try {
+		const response = await SipoService.getPersonalPlanta(cc);
+		if (response?.status === 200) jefesOptions.value = response.data || [];
+	} finally {
+		loadingJefes.value = false;
+		ensureJefeOption();
+	}
 };
 
 const onDescripcionCentroChange = () => {
 	form.seccion1.centroCosto = form.seccion1.descripcionCentroCosto;
+	form.seccion1.jefeUserId = null;
+	form.seccion1.jefeNombre = null;
+	form.seccion1.jefeCorreo = null;
+	void loadJefes();
 };
 
 const onRegionChange = () => {
@@ -1371,7 +1536,7 @@ const onSueldoChange = (value: number | null) => {
 		return;
 	}
 	if (value < SUELDO_MIN) {
-		sueldoError.value = 'El monto Líquido Pactado no puede ser menor a 581.000 pesos';
+		sueldoError.value = 'El monto Líquido Pactado no puede ser menor a 585.000 pesos';
 	}
 };
 
@@ -1406,6 +1571,16 @@ const onFileSelected = (event: Event, docType: DocKey) => {
 	uploadingDoc.value = null;
 };
 
+const formatFechaCl = (value: Date | null) => {
+	if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '—';
+	return value.toLocaleDateString('es-CL');
+};
+
+const formatSueldoPaso = (value: number | null) => {
+	if (value == null) return '—';
+	return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
+};
+
 const toDateIso = (value: Date | null) => {
 	if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
 	const y = value.getFullYear();
@@ -1425,7 +1600,7 @@ const labelOf = (options: any[] | undefined, value: unknown) => {
 	return found?.label || String(value);
 };
 
-const buildFichaFormData = () => {
+const buildFichaFormData = (soloSupervisor = false) => {
 	const fd = new FormData();
 	const s1 = form.seccion1;
 	const s2 = form.seccion2;
@@ -1445,6 +1620,11 @@ const buildFichaFormData = () => {
 	appendField(fd, 'fecha_ingreso', toDateIso(s1.fechaIngreso));
 	appendField(fd, 'correo_jefe_directo', s1.correoJefeDirecto.trim());
 	appendField(fd, 'correo_admin_obra', s1.correoAdminObra.trim());
+	appendField(fd, 'correo_colaborador', s1.correoColaborador.trim());
+	appendField(fd, 'jefe_user_id', s1.jefeUserId);
+	appendField(fd, 'jefe_nombre', s1.jefeNombre);
+	appendField(fd, 'jefe_correo', s1.jefeCorreo);
+	if (soloSupervisor) appendField(fd, 'solo_supervisor', '1');
 
 	appendField(fd, 'nombres', s2.nombres.trim());
 	appendField(fd, 'apellido_paterno', s2.apellidoPaterno.trim());
@@ -1508,6 +1688,11 @@ const resetFormAfterSave = () => {
 	form.seccion1.fechaIngreso = null;
 	form.seccion1.correoJefeDirecto = '';
 	form.seccion1.correoAdminObra = '';
+	form.seccion1.correoColaborador = '';
+	form.seccion1.jefeUserId = null;
+	form.seccion1.jefeNombre = null;
+	form.seccion1.jefeCorreo = null;
+	jefesOptions.value = [];
 	form.seccion2.nombres = '';
 	form.seccion2.apellidoPaterno = '';
 	form.seccion2.apellidoMaterno = '';
@@ -1556,6 +1741,162 @@ const resetFormAfterSave = () => {
 	Object.keys(docErrors).forEach((k) => delete docErrors[k]);
 };
 
+const validateSupervisor = (): boolean => {
+	clearFieldErrors();
+	let ok = true;
+	const s1 = form.seccion1;
+	const s3 = form.seccion3;
+	const checks: Array<[string, unknown]> = [
+		['cargo', s1.cargo],
+		['fechaIngreso', s1.fechaIngreso],
+		['correoColaborador', s1.correoColaborador],
+		['sueldoLiquido', s3.sueldoLiquido],
+		['tipoContrato', s3.tipoContrato],
+		['horario', s3.horario],
+	];
+	for (const [key, value] of checks) {
+		if (!markRequired(key, value)) ok = false;
+	}
+	if (isObraFaena.value) {
+		if (!markRequired('hitoTexto', hitoTexto.value)) ok = false;
+		if (!markRequired('fechaTerminoHito', fechaTerminoHito.value)) ok = false;
+	}
+	if (isPlazoFijo.value && !markRequired('plazoFijoFecha', plazoFijoFecha.value)) ok = false;
+	return ok;
+};
+
+const aplicarDatosColaborador = (ficha: Record<string, any>) => {
+	form.seccion2.nombres = ficha.nombres || form.seccion2.nombres;
+	form.seccion2.apellidoPaterno = ficha.apellido_paterno || form.seccion2.apellidoPaterno;
+	form.seccion2.apellidoMaterno = ficha.apellido_materno || form.seccion2.apellidoMaterno;
+	if (ficha.rut) form.seccion2.rut = formatRut(ficha.rut) || ficha.rut;
+	if (ficha.email_personal || ficha.correo_colaborador) {
+		form.seccion2.emailPersonal = ficha.email_personal || ficha.correo_colaborador;
+	}
+	if (ficha.telefono) telefonoLocal.value = String(ficha.telefono).replace(/^569/, '');
+	if (ficha.domicilio) form.seccion2.domicilio = ficha.domicilio;
+};
+
+const detenerPollFicha = () => {
+	if (fichaPoll) {
+		clearInterval(fichaPoll);
+		fichaPoll = null;
+	}
+};
+
+const generarEnlaceCandidato = async () => {
+	onSueldoChange(form.seccion3.sueldoLiquido);
+	if (!validateSupervisor()) {
+		showObligatoriosToast();
+		return;
+	}
+	generandoQr.value = true;
+	global.utl.showLoader();
+	try {
+		const fd = buildFichaFormData(true);
+		const res =
+			isEditMode.value && editingId.value
+				? await SipoFichasService.update(editingId.value, fd)
+				: await SipoFichasService.create(fd);
+		if (res?.status !== 200) {
+			const detail = (res as any)?.detail || 'No se pudo guardar la ficha.';
+			throw { response: { data: { message: detail } } };
+		}
+		const id = Number(res?.data?.id || editingId.value);
+		if (!id) throw new Error('No se pudo guardar la ficha.');
+		if (!isEditMode.value) {
+			await router.replace({ name: 'SipoFichaIngresoEdit', params: { id: String(id) } });
+		}
+		const acceso = await SipoFichasService.generarAcceso(id);
+		enlaceUrl.value = acceso.data?.url || '';
+		enlaceQr.value = acceso.data?.qr_base64 || '';
+		paso.value = 'enlace';
+		detenerPollFicha();
+		fichaPoll = setInterval(async () => {
+			const fresh = await SipoFichasService.getById(id);
+			const data = fresh?.data as Record<string, any> | undefined;
+			if (data?.estado === 'PENDIENTE_RRHH') {
+				await fillFormFromFicha(data);
+				detenerPollFicha();
+				if (isSupervisor.value) {
+					global.utl.genCustomeToast(
+						ToastSeverityMessageEnum.SUCCESS,
+						'Ficha de Ingreso',
+						'El colaborador envió sus datos.'
+					);
+				} else {
+					paso.value = 'rrhh';
+					global.utl.genCustomeToast(
+						ToastSeverityMessageEnum.SUCCESS,
+						'Ficha de Ingreso',
+						'El colaborador envió sus datos. Completa los datos de RRHH.'
+					);
+				}
+			}
+		}, 5000);
+	} catch (err: any) {
+		const msg = err?.response?.data?.message || err?.response?.data?.detail || 'No se pudo generar el enlace.';
+		global.utl.genCustomeToast(ToastSeverityMessageEnum.ERROR, 'Ficha de Ingreso', String(msg));
+	} finally {
+		generandoQr.value = false;
+		global.utl.hiddenLoader();
+	}
+};
+
+const copiarEnlace = async () => {
+	if (!enlaceUrl.value) return;
+	await navigator.clipboard.writeText(enlaceUrl.value);
+	global.utl.genCustomeToast(ToastSeverityMessageEnum.SUCCESS, 'Ficha de Ingreso', 'Enlace copiado.');
+};
+
+onUnmounted(detenerPollFicha);
+watch(paso, (value) => {
+	if (value !== 'enlace') detenerPollFicha();
+});
+
+const enviarAJefe = async () => {
+	onSueldoChange(form.seccion3.sueldoLiquido);
+	if (isSavingBlocked.value || !validateRequiredFields()) {
+		showObligatoriosToast();
+		return;
+	}
+	if (form.seccion2.rut) {
+		await onRutBlur();
+		if (rutWarning.value) {
+			global.utl.genCustomeToast(ToastSeverityMessageEnum.WARN, 'Ficha de Ingreso', rutWarning.value);
+			return;
+		}
+	}
+	saving.value = true;
+	global.utl.showLoader();
+	try {
+		const fd = buildFichaFormData();
+		const id = editingId.value;
+		if (!id) throw new Error('Ficha no encontrada.');
+		const res = await SipoFichasService.update(id, fd);
+		if (res?.status !== 200) {
+			throw { response: { data: { message: (res as any)?.detail || 'No se pudo guardar la ficha.' } } };
+		}
+		const aprob = await SipoFichasService.aprobar(id);
+		if (aprob?.status !== 200) {
+			throw { response: { data: { message: (aprob as any)?.detail || 'No se pudo enviar al jefe de terreno.' } } };
+		}
+		fichaEstado.value = 'PENDIENTE_JEFE_TERRENO';
+		global.utl.genCustomeToast(
+			ToastSeverityMessageEnum.SUCCESS,
+			'Ficha de Ingreso',
+			'Enviada a confirmación del Jefe de Terreno.'
+		);
+		await router.push({ name: 'SipoFichaIngresoHistorial' });
+	} catch (err: any) {
+		const msg = err?.response?.data?.message || err?.response?.data?.detail || 'No se pudo enviar la ficha.';
+		global.utl.genCustomeToast(ToastSeverityMessageEnum.ERROR, 'Ficha de Ingreso', String(msg));
+	} finally {
+		saving.value = false;
+		global.utl.hiddenLoader();
+	}
+};
+
 const onSave = async () => {
 	onSueldoChange(form.seccion3.sueldoLiquido);
 	if (isSavingBlocked.value) {
@@ -1569,6 +1910,17 @@ const onSave = async () => {
 	if (!validateRequiredFields()) {
 		showObligatoriosToast();
 		return;
+	}
+	if (form.seccion2.rut) {
+		await onRutBlur();
+		if (rutWarning.value) {
+			global.utl.genCustomeToast(
+				ToastSeverityMessageEnum.WARN,
+				'Ficha de Ingreso',
+				rutWarning.value
+			);
+			return;
+		}
 	}
 
 	saving.value = true;
@@ -1607,6 +1959,24 @@ const onSave = async () => {
 	}
 };
 
+const openDocumento = async (url?: string) => {
+	if (!url) return;
+	try {
+		const response = await axios.get(url, { responseType: 'blob' });
+		if (response?.status && Number(response.status) >= 400) throw new Error('HTTP error');
+		const contentType = String(response.headers['content-type'] || 'application/octet-stream');
+		const blobUrl = URL.createObjectURL(new Blob([response.data], { type: contentType }));
+		window.open(blobUrl, '_blank', 'noopener,noreferrer');
+		window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+	} catch {
+		global.utl.genCustomeToast(
+			ToastSeverityMessageEnum.ERROR,
+			'Documento',
+			'No se pudo abrir el documento adjunto.'
+		);
+	}
+};
+
 const onPrint = () => {
 	window.print();
 };
@@ -1634,34 +2004,32 @@ const fileNameFromUrl = (url: unknown) => {
 };
 
 const applyExistingDocMeta = (ficha: Record<string, any>) => {
-	const map: Record<DocKey, string> = {
-		comprobanteDomicilio: 'doc_domicilio_url',
-		certificadoTitulo: 'doc_titulo_url',
-		certificadoAfp: 'doc_afp_url',
-		certificadoSalud: 'doc_salud_url',
-		copiaCedula: 'doc_cedula_url',
+	const map: Record<DocKey, { field: string; url: string }> = {
+		comprobanteDomicilio: { field: 'doc_domicilio', url: 'doc_domicilio_url' },
+		certificadoTitulo: { field: 'doc_titulo', url: 'doc_titulo_url' },
+		certificadoAfp: { field: 'doc_afp', url: 'doc_afp_url' },
+		certificadoSalud: { field: 'doc_salud', url: 'doc_salud_url' },
+		copiaCedula: { field: 'doc_cedula', url: 'doc_cedula_url' },
 	};
 	(Object.keys(map) as DocKey[]).forEach((key) => {
-		const url = ficha[map[key]];
-		const name = fileNameFromUrl(url);
+		const stored = String(ficha[map[key].field] || '').split('/').filter(Boolean).pop() || '';
+		const name = stored || fileNameFromUrl(String(ficha[map[key].url] || '').replace(/\/+$/, ''));
 		if (name) {
-			docMeta[key] = { name: `Actual: ${name}`, sizeMb: '' };
+			docMeta[key] = {
+				name: `Actual: ${name}`,
+				sizeMb: '',
+				url: String(ficha[map[key].url] || '') || undefined,
+			};
 			form.seccion3.documentos[key] = name;
+			delete fieldErrors[key];
 		}
 	});
 };
 
 const fillFormFromFicha = async (ficha: Record<string, any>) => {
-	selectedPais.value = EXTERNAL_CODE_PAIS_CHILE;
-	await loadEmpresas(EXTERNAL_CODE_PAIS_CHILE);
+	selectedPais.value = EXTERNAL_CODE_PAIS_GRUPO_2;
+	await loadEmpresas(EXTERNAL_CODE_PAIS_GRUPO_2);
 	form.seccion1.razonSocial = ficha.razon_social_id || null;
-	if (
-		form.seccion1.razonSocial &&
-		!empresas.value.some((e) => e.external_code === form.seccion1.razonSocial)
-	) {
-		selectedPais.value = EXTERNAL_CODE_PAIS_GRUPO_2;
-		await loadEmpresas(EXTERNAL_CODE_PAIS_GRUPO_2);
-	}
 	if (form.seccion1.razonSocial) {
 		await Promise.all([
 			loadCargosYObras(form.seccion1.razonSocial),
@@ -1680,6 +2048,11 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 	form.seccion1.fechaIngreso = parseDateValue(ficha.fecha_ingreso);
 	form.seccion1.correoJefeDirecto = ficha.correo_jefe_directo || '';
 	form.seccion1.correoAdminObra = ficha.correo_admin_obra || '';
+	form.seccion1.correoColaborador = ficha.correo_colaborador || '';
+	form.seccion1.jefeUserId = ficha.jefe_user_id || null;
+	form.seccion1.jefeNombre = ficha.jefe_nombre || null;
+	form.seccion1.jefeCorreo = ficha.jefe_correo || null;
+	await loadJefes();
 
 	form.seccion2.nombres = ficha.nombres || '';
 	form.seccion2.apellidoPaterno = ficha.apellido_paterno || '';
@@ -1720,7 +2093,7 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 		findOptionValue(maestros.regiones, ficha.region) || ficha.region || null;
 	form.seccion2.ciudad = ficha.ciudad || null;
 	form.seccion2.comuna = ficha.comuna || null;
-	form.seccion2.emailPersonal = ficha.email_personal || '';
+	form.seccion2.emailPersonal = ficha.email_personal || ficha.correo_colaborador || '';
 	form.seccion2.banco = findOptionValue(maestros.bancos, ficha.banco);
 	form.seccion2.metodoPago =
 		findOptionValue(maestros.metodos_pago, ficha.metodo_pago) ||
@@ -1755,6 +2128,32 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 
 	applyExistingDocMeta(ficha);
 	onSueldoChange(form.seccion3.sueldoLiquido);
+	fichaEstado.value = String(ficha.estado || '');
+	if (isSupervisor.value) {
+		if (
+			fichaEstado.value === 'PENDIENTE_RRHH'
+			|| fichaEstado.value === 'PENDIENTE_JEFE_TERRENO'
+			|| fichaEstado.value === 'APROBADA'
+			|| fichaEstado.value === 'RECHAZADA'
+		) {
+			paso.value = 'colaborador';
+		} else if (editingId.value) {
+			paso.value = 'enlace';
+		} else {
+			paso.value = 'supervisor';
+		}
+		return;
+	}
+	if (
+		fichaEstado.value === 'PENDIENTE_RRHH'
+		|| fichaEstado.value === 'PENDIENTE_JEFE_TERRENO'
+		|| fichaEstado.value === 'APROBADA'
+		|| fichaEstado.value === 'RECHAZADA'
+	) {
+		paso.value = 'rrhh';
+	} else if (editingId.value) {
+		paso.value = 'enlace';
+	}
 };
 
 const loadFichaForEdit = async () => {
@@ -1775,6 +2174,24 @@ const loadFichaForEdit = async () => {
 		return;
 	}
 	await fillFormFromFicha(ficha);
+	if (paso.value === 'enlace' && editingId.value) {
+		const id = editingId.value;
+		const acceso = await SipoFichasService.generarAcceso(id);
+		enlaceUrl.value = acceso.data?.url || '';
+		enlaceQr.value = acceso.data?.qr_base64 || '';
+		detenerPollFicha();
+		fichaPoll = setInterval(async () => {
+			const fresh = await SipoFichasService.getById(id);
+			const data = fresh?.data as Record<string, any> | undefined;
+			if (data?.estado === 'PENDIENTE_RRHH') {
+				await fillFormFromFicha(data);
+				detenerPollFicha();
+				if (!isSupervisor.value) {
+					paso.value = 'rrhh';
+				}
+			}
+		}, 5000);
+	}
 };
 
 onMounted(async () => {

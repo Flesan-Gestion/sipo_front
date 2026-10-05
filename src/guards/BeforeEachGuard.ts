@@ -16,7 +16,11 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
 
     if (to.path.startsWith("/auth") && security.user) {
         global.utl.genToast(global.tstType.USER_ALREADY_LOGGED);
-        next({ name: 'SipoList' });
+        next(
+            Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR
+                ? { name: 'SipoFichaIngresoHistorial' }
+                : { name: 'SipoList' }
+        );
         return;
     }
 
@@ -26,9 +30,23 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
         return;
     }
 
+    const esSupervisor = Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR;
+    const rutasBloqueadasSupervisor = [
+        'SipoList',
+        'SipoCreate',
+        'SipoEdit',
+        'SipoDetail',
+        'SipoUsuarios',
+        'SipoConfigCargos',
+    ];
+    if (esSupervisor && rutasBloqueadasSupervisor.includes(String(to.name || ''))) {
+        next({ name: 'SipoFichaIngresoHistorial' });
+        return;
+    }
+
     if (to.meta.sipoRolAdminOnly && Number(security.user?.sip_rol_id) !== RolesEnum.ADMIN) {
         global.utl.genToast(global.tstType.PERMISSION_DENIED);
-        next({ name: 'SipoList' });
+        next(esSupervisor ? { name: 'SipoFichaIngresoHistorial' } : { name: 'SipoList' });
         return;
     }
 

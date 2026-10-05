@@ -1,4 +1,5 @@
 import { formatRut } from '../../../utils/formatRut';
+import { formatMontoCl, parseMontoCl } from '../../../utils/formatters';
 
 type Opt = { label?: string; value?: string | number; regiones?: Opt[]; ciudades?: any[]; comunas?: Opt[] };
 
@@ -143,8 +144,14 @@ export function mapFichaToCandidatoForm(
 		cf_rrhh_sip_obra_candidato_nom_salud: salud,
 		cf_rrhh_sip_obra_candidato_jubilado: ficha.jubilado ? 'Sí' : 'No',
 		cf_rrhh_sip_obra_candidato_nomcar: ficha.cargo || null,
+		cf_rrhh_sip_obra_candidato_jefe_user_id: ficha.jefe_user_id || null,
+		cf_rrhh_sip_obra_candidato_jefe_nombre: ficha.jefe_nombre || null,
+		cf_rrhh_sip_obra_candidato_jefe_correo: ficha.jefe_correo || null,
 		cf_rrhh_sip_obra_candidato_fecha_ingreso: parseDateInput(ficha.fecha_ingreso),
-		cf_rrhh_sip_obra_candidato_sueldo: ficha.sueldo_liquido != null ? String(ficha.sueldo_liquido) : null,
+		cf_rrhh_sip_obra_candidato_sueldo: (() => {
+			const n = parseMontoCl(ficha.sueldo_liquido);
+			return n == null ? null : formatMontoCl(n);
+		})(),
 		cf_rrhh_sip_obra_candidato_horario_trabajo: horario,
 		cf_rrhh_sip_obra_candidato_cuenta_gasto: cuentaGasto,
 		cf_rrhh_sip_obra_candidato_tipo_contrato: tipoContrato,
@@ -159,7 +166,8 @@ export function mapFichaToCandidatoForm(
 	const labelsCheck: [string, unknown][] = [
 		['Tratamiento', formPatch.cf_rrhh_sip_obra_candidato_tratamiento],
 		['Primer nombre', formPatch.cf_rrhh_sip_obra_candidato_nombre],
-		['Apellido paterno', formPatch.cf_rrhh_sip_obra_candidato_ap],
+		['Primer Apellido', formPatch.cf_rrhh_sip_obra_candidato_ap],
+		['Segundo Apellido', formPatch.cf_rrhh_sip_obra_candidato_am],
 		['Género', formPatch.cf_rrhh_sip_obra_candidato_genero],
 		['RUT', formPatch.cf_rrhh_sip_obra_candidato_rut],
 		['Fecha de nacimiento', formPatch.cf_rrhh_sip_obra_candidato_fecha_nacimiento],
@@ -181,6 +189,7 @@ export function mapFichaToCandidatoForm(
 		['Salud', formPatch.cf_rrhh_sip_obra_candidato_nom_salud],
 		['Jubilado', formPatch.cf_rrhh_sip_obra_candidato_jubilado],
 		['Cargo', formPatch.cf_rrhh_sip_obra_candidato_nomcar],
+		['Jefe Directo', formPatch.cf_rrhh_sip_obra_candidato_jefe_user_id],
 		['Fecha ingreso', formPatch.cf_rrhh_sip_obra_candidato_fecha_ingreso],
 		['Sueldo', formPatch.cf_rrhh_sip_obra_candidato_sueldo],
 		['Horario', formPatch.cf_rrhh_sip_obra_candidato_horario_trabajo],

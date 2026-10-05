@@ -12,7 +12,8 @@ export const SidebarItems: SidebarItemInterface[] = [
         name: 'Solicitudes de Obra',
         pathName: 'SipoList',
         icon: 'pi-users',
-        type: SidebarTypeItemEnum.ITEM
+        type: SidebarTypeItemEnum.ITEM,
+        ocultoSupervisor: true,
     },
     {
         name: 'Ficha Ingreso Personal',
@@ -33,6 +34,7 @@ export const SidebarItems: SidebarItemInterface[] = [
         name: 'Configuración',
         icon: 'pi-cog',
         type: SidebarTypeItemEnum.DROPDOWN_ITEMS,
+        ocultoSupervisor: true,
         children: [
             {
                 name: 'Usuarios',

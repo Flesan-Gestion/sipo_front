@@ -231,9 +231,6 @@
 						</AccordionTab>
 					</Accordion>
 
-					<div class="mt-3">
-						<SipoHistorialEstadoPanel :items="detail?.historial ?? []" />
-					</div>
 				</TabPanel>
 
 				<TabPanel header="TRABAJADORES">
@@ -245,6 +242,7 @@
 						:acciones-estado="detail?.acciones_estado ?? []"
 						:cargo-options="cargoOptions"
 						:empresa-rut="form.controls.rut.value || detail?.cf_rrhh_sip_rut || null"
+						:centro-costo="detail?.cf_rrhh_sip_cc || form.get('cc') || null"
 						@changed="onCandidatosChanged"
 						@approved="onContratacionAprobada"
 						@estado-changed="onEstadoChanged"
@@ -441,7 +439,6 @@ import { useGlobalStore } from '../../../store/global';
 import { EssentialForm } from '../../../shared/classes/EssentialForm';
 import { ToastSeverityMessageEnum } from '../../../shared/interfaces/toast-message.interface';
 import SipoCandidatosPanel from '../components/SipoCandidatosPanel.vue';
-import SipoHistorialEstadoPanel from '../components/SipoHistorialEstadoPanel.vue';
 import SipoTrabajadoresSeleccionados from '../components/SipoTrabajadoresSeleccionados.vue';
 import { SipoService } from '../services/SipoService';
 import {

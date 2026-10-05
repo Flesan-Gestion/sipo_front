@@ -88,12 +88,12 @@
 								<InputText v-model="form.cf_rrhh_sip_obra_candidato_segundo_nombre" class="w-full" />
 							</div>
 							<div class="field col-12 md:col-6">
-								<label class="text-sm">(*) Apellido paterno</label>
+								<label class="text-sm">(*) Primer Apellido</label>
 								<InputText v-model="form.cf_rrhh_sip_obra_candidato_ap" :class="fc('cf_rrhh_sip_obra_candidato_ap')" />
 							</div>
 							<div class="field col-12 md:col-6">
-								<label class="text-sm">Apellido materno</label>
-								<InputText v-model="form.cf_rrhh_sip_obra_candidato_am" class="w-full" />
+								<label class="text-sm">(*) Segundo Apellido</label>
+								<InputText v-model="form.cf_rrhh_sip_obra_candidato_am" :class="fc('cf_rrhh_sip_obra_candidato_am')" />
 							</div>
 							<div class="field col-12 md:col-6">
 								<label class="text-sm">(*) Género</label>
@@ -132,25 +132,6 @@
 										@input="onTelefonoInput"
 									/>
 								</div>
-							</div>
-							<div class="field col-12 md:col-6">
-								<label class="text-sm">(*) Correo del candidato</label>
-								<InputText
-									v-model="form.cf_rrhh_sip_obra_candidato_correo"
-									type="email"
-									class="w-full"
-									:class="{ 'p-invalid': correoError || fieldErrors.cf_rrhh_sip_obra_candidato_correo }"
-									:disabled="isValidatingEmail"
-									@input="onCorreoInput"
-									@blur="onCorreoBlur"
-								/>
-								<small
-									v-if="isValidatingEmail"
-									class="text-xs text-gray-500 font-medium animate-pulse block mt-1"
-								>
-									Verificando correo...
-								</small>
-								<small v-else-if="correoError" class="p-error block mt-1">{{ correoError }}</small>
 							</div>
 							<div class="field col-12 md:col-6">
 								<label class="text-sm">(*) País de nacimiento</label>
@@ -322,22 +303,23 @@
 						</div>
 					</AccordionTab>
 
-					<AccordionTab header="CONDICIONES DE CONTRATO, HORARIO Y SUELDO">
+					<AccordionTab header="1. CONDICIONES CONTRACTUALES (RRHH)">
 						<div class="grid formgrid">
 							<div class="field col-12 md:col-6">
-								<label class="text-sm">(*) Nombre del cargo</label>
+								<label class="text-sm">(*) Jefe Directo</label>
 								<Dropdown
-									v-model="form.cf_rrhh_sip_obra_candidato_nomcar"
-									:options="cargoDropdownOptions"
+									v-model="form.cf_rrhh_sip_obra_candidato_jefe_user_id"
+									:options="jefesOptions"
 									optionLabel="label"
-									optionValue="value"
+									optionValue="user_id"
 									filter
 									showClear
 									placeholder="Seleccionar"
-									:class="fc('cf_rrhh_sip_obra_candidato_nomcar')"
-									:loading="loadingCargos"
-									emptyMessage="Sin cargos para esta razón social"
+									:class="fc('cf_rrhh_sip_obra_candidato_jefe_user_id')"
+									:loading="loadingJefes"
+									emptyMessage="Sin personal activo en este centro de costo"
 									emptyFilterMessage="Sin resultados"
+									@change="onJefeChange"
 								/>
 							</div>
 							<div class="field col-12 md:col-6">
@@ -355,7 +337,11 @@
 							</div>
 							<div class="field col-12 md:col-6">
 								<label class="text-sm">(*) Sueldo líquido pactado</label>
-								<InputText v-model="form.cf_rrhh_sip_obra_candidato_sueldo" :class="fc('cf_rrhh_sip_obra_candidato_sueldo')" />
+								<InputText
+									v-model="form.cf_rrhh_sip_obra_candidato_sueldo"
+									:class="fc('cf_rrhh_sip_obra_candidato_sueldo')"
+									@blur="onSueldoBlur"
+								/>
 								<small v-if="sueldoWarning" class="p-error block mt-1">{{ sueldoWarning }}</small>
 							</div>
 							<div class="field col-12 md:col-6">
@@ -380,16 +366,6 @@
 									optionValue="value"
 									:class="fc('cf_rrhh_sip_obra_candidato_tipo_contrato')"
 									@change="onTipoContratoChange"
-								/>
-							</div>
-							<div class="field col-12 md:col-6">
-								<label class="text-sm">(*) Fecha de ingreso</label>
-								<Calendar
-									v-model="form.cf_rrhh_sip_obra_candidato_fecha_ingreso"
-									dateFormat="dd-mm-yy"
-									showIcon
-									:class="fc('cf_rrhh_sip_obra_candidato_fecha_ingreso')"
-									@date-select="validateFechasContrato"
 								/>
 							</div>
 							<div v-if="isObraFaena" class="field col-12 md:col-6">
@@ -419,6 +395,53 @@
 									@date-select="validateFechasContrato"
 								/>
 								<small v-if="plazoFijoError" class="p-error block">{{ plazoFijoError }}</small>
+							</div>
+						</div>
+					</AccordionTab>
+
+					<AccordionTab header="2. CARGO, INGRESO Y CORREO (SUPERVISOR)">
+						<div class="grid formgrid">
+							<div class="field col-12 md:col-6">
+								<label class="text-sm">(*) Nombre del cargo</label>
+								<Dropdown
+									v-model="form.cf_rrhh_sip_obra_candidato_nomcar"
+									:options="cargoDropdownOptions"
+									optionLabel="label"
+									optionValue="value"
+									filter
+									showClear
+									placeholder="Seleccionar"
+									:class="fc('cf_rrhh_sip_obra_candidato_nomcar')"
+									:loading="loadingCargos"
+									emptyMessage="Sin cargos para esta razón social"
+									emptyFilterMessage="Sin resultados"
+								/>
+							</div>
+							<div class="field col-12 md:col-6">
+								<label class="text-sm">(*) Fecha de ingreso</label>
+								<Calendar
+									v-model="form.cf_rrhh_sip_obra_candidato_fecha_ingreso"
+									dateFormat="dd-mm-yy"
+									showIcon
+									:class="fc('cf_rrhh_sip_obra_candidato_fecha_ingreso')"
+									@date-select="validateFechasContrato"
+								/>
+							</div>
+							<div class="field col-12 md:col-6">
+								<label class="text-sm">(*) Correo Electrónico del Colaborador</label>
+								<InputText
+									v-model="form.cf_rrhh_sip_obra_candidato_correo"
+									type="email"
+									:class="{ 'p-invalid': correoError || fieldErrors.cf_rrhh_sip_obra_candidato_correo }"
+									placeholder="correo@empresa.cl"
+									:disabled="isValidatingEmail"
+									@input="onCorreoInput"
+									@blur="onCorreoBlur"
+								/>
+								<small v-if="isValidatingEmail" class="text-xs text-color-secondary block mt-1">
+									Verificando correo...
+								</small>
+								<small v-else-if="correoError" class="p-error block mt-1">{{ correoError }}</small>
 							</div>
 						</div>
 					</AccordionTab>
@@ -468,11 +491,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onUnmounted, reactive, ref, watch } from 'vue';
 import { useGlobalStore } from '../../../store/global';
 import { ToastGroupEnum, ToastSeverityMessageEnum } from '../../../shared/interfaces/toast-message.interface';
 import { useToastStore } from '../../../store/toast';
 import { formatRut, filterRutInput, isValidRut } from '../../../utils/formatRut';
+import { formatMontoCl, parseMontoCl } from '../../../utils/formatters';
 import { SipoService } from '../services/SipoService';
 import { SipoFichasService, SipoFichaListItem } from '../services/SipoFichasService';
 import { mapFichaToCandidatoForm } from '../utils/mapFichaToCandidato';
@@ -493,6 +517,7 @@ const props = defineProps<{
 	cargoOptions?: { label: string; value: string }[];
 	candidato?: SipoCandidato | null;
 	readOnly?: boolean;
+	centroCosto?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -510,9 +535,15 @@ const fichaItems = ref<SipoFichaListItem[]>([]);
 const loadingFichas = ref(false);
 const fichaCamposFaltantes = ref<string[]>([]);
 const loadingCargos = ref(false);
+const loadingJefes = ref(false);
+const jefesOptions = ref<{ user_id: string; nombre: string; correo: string; label: string }[]>([]);
 const isLoadingDetail = ref(false);
 const cargosLocal = ref<{ label: string; value: string }[]>([]);
 const saving = ref(false);
+const generandoQr = ref(false);
+const qrVisible = ref(false);
+const qrData = ref<{ url: string; qr_base64: string; estado?: string } | null>(null);
+let portalPoll: ReturnType<typeof setInterval> | null = null;
 const correoError = ref('');
 const isValidatingEmail = ref(false);
 const telefonoLocal = ref('');
@@ -586,6 +617,9 @@ const emptyForm = (): Record<string, any> => ({
 	cf_rrhh_sip_obra_candidato_numcta: null,
 	cf_rrhh_sip_obra_candidato_anticipo: 'Sí',
 	cf_rrhh_sip_obra_candidato_nomcar: null,
+	cf_rrhh_sip_obra_candidato_jefe_user_id: null,
+	cf_rrhh_sip_obra_candidato_jefe_nombre: null,
+	cf_rrhh_sip_obra_candidato_jefe_correo: null,
 	cf_rrhh_sip_obra_candidato_horario_trabajo: null,
 	cf_rrhh_sip_obra_candidato_sueldo: null,
 	cf_rrhh_sip_obra_candidato_cuenta_gasto: null,
@@ -651,6 +685,7 @@ const validateRequiredFields = (): boolean => {
 		['cf_rrhh_sip_obra_candidato_tratamiento', form.cf_rrhh_sip_obra_candidato_tratamiento],
 		['cf_rrhh_sip_obra_candidato_nombre', form.cf_rrhh_sip_obra_candidato_nombre],
 		['cf_rrhh_sip_obra_candidato_ap', form.cf_rrhh_sip_obra_candidato_ap],
+		['cf_rrhh_sip_obra_candidato_am', form.cf_rrhh_sip_obra_candidato_am],
 		['cf_rrhh_sip_obra_candidato_genero', form.cf_rrhh_sip_obra_candidato_genero],
 		['cf_rrhh_sip_obra_candidato_rut', form.cf_rrhh_sip_obra_candidato_rut],
 		['cf_rrhh_sip_obra_candidato_fecha_nacimiento', form.cf_rrhh_sip_obra_candidato_fecha_nacimiento],
@@ -672,6 +707,7 @@ const validateRequiredFields = (): boolean => {
 		['cf_rrhh_sip_obra_candidato_nom_salud', form.cf_rrhh_sip_obra_candidato_nom_salud],
 		['cf_rrhh_sip_obra_candidato_jubilado', form.cf_rrhh_sip_obra_candidato_jubilado],
 		['cf_rrhh_sip_obra_candidato_nomcar', form.cf_rrhh_sip_obra_candidato_nomcar],
+		['cf_rrhh_sip_obra_candidato_jefe_user_id', form.cf_rrhh_sip_obra_candidato_jefe_user_id],
 		['cf_rrhh_sip_obra_candidato_horario_trabajo', form.cf_rrhh_sip_obra_candidato_horario_trabajo],
 		['cf_rrhh_sip_obra_candidato_sueldo', form.cf_rrhh_sip_obra_candidato_sueldo],
 		['cf_rrhh_sip_obra_candidato_cuenta_gasto', form.cf_rrhh_sip_obra_candidato_cuenta_gasto],
@@ -779,6 +815,11 @@ const sueldoWarning = computed(() =>
 		form.cf_rrhh_sip_obra_candidato_horario_trabajo
 	)
 );
+
+const onSueldoBlur = () => {
+	const n = parseMontoCl(form.cf_rrhh_sip_obra_candidato_sueldo);
+	form.cf_rrhh_sip_obra_candidato_sueldo = n == null ? null : formatMontoCl(n);
+};
 
 const isObraFaena = computed(
 	() => form.cf_rrhh_sip_obra_candidato_tipo_contrato === 'Obra o Faena'
@@ -959,6 +1000,42 @@ const loadCargosByEmpresa = async () => {
 	}
 };
 
+const onJefeChange = () => {
+	const uid = String(form.cf_rrhh_sip_obra_candidato_jefe_user_id || '');
+	const item = jefesOptions.value.find((j) => j.user_id === uid);
+	form.cf_rrhh_sip_obra_candidato_jefe_nombre = item?.nombre || null;
+	form.cf_rrhh_sip_obra_candidato_jefe_correo = item?.correo || null;
+};
+
+const ensureJefeOption = () => {
+	const uid = String(form.cf_rrhh_sip_obra_candidato_jefe_user_id || '').trim();
+	if (!uid) return;
+	if (jefesOptions.value.some((j) => j.user_id === uid)) return;
+	const nombre = String(form.cf_rrhh_sip_obra_candidato_jefe_nombre || '').trim();
+	const correo = String(form.cf_rrhh_sip_obra_candidato_jefe_correo || '').trim();
+	const label = nombre && correo ? `${nombre} (${correo})` : nombre || correo || uid;
+	jefesOptions.value = [{ user_id: uid, nombre, correo, label }, ...jefesOptions.value];
+};
+
+const loadJefes = async () => {
+	const cc = (props.centroCosto || '').trim();
+	jefesOptions.value = [];
+	if (!cc) {
+		ensureJefeOption();
+		return;
+	}
+	loadingJefes.value = true;
+	try {
+		const response = await SipoService.getPersonalPlanta(cc);
+		if (response?.status === 200) {
+			jefesOptions.value = response.data || [];
+		}
+	} finally {
+		loadingJefes.value = false;
+		ensureJefeOption();
+	}
+};
+
 const syncCargoSelection = (opts?: { warnIfMissing?: boolean }) => {
 	const current = String(form.cf_rrhh_sip_obra_candidato_nomcar || '').trim();
 	if (!current) return;
@@ -1021,8 +1098,14 @@ const fillFromCandidato = (row: SipoCandidato) => {
 		cf_rrhh_sip_obra_candidato_numcta: row.cf_rrhh_sip_obra_candidato_numcta,
 		cf_rrhh_sip_obra_candidato_anticipo: row.cf_rrhh_sip_obra_candidato_anticipo,
 		cf_rrhh_sip_obra_candidato_nomcar: row.cf_rrhh_sip_obra_candidato_nomcar,
+		cf_rrhh_sip_obra_candidato_jefe_user_id: row.cf_rrhh_sip_obra_candidato_jefe_user_id || null,
+		cf_rrhh_sip_obra_candidato_jefe_nombre: row.cf_rrhh_sip_obra_candidato_jefe_nombre || null,
+		cf_rrhh_sip_obra_candidato_jefe_correo: row.cf_rrhh_sip_obra_candidato_jefe_correo || null,
 		cf_rrhh_sip_obra_candidato_horario_trabajo: row.cf_rrhh_sip_obra_candidato_horario_trabajo,
-		cf_rrhh_sip_obra_candidato_sueldo: row.cf_rrhh_sip_obra_candidato_sueldo,
+		cf_rrhh_sip_obra_candidato_sueldo: (() => {
+			const n = parseMontoCl(row.cf_rrhh_sip_obra_candidato_sueldo);
+			return n == null ? row.cf_rrhh_sip_obra_candidato_sueldo : formatMontoCl(n);
+		})(),
 		cf_rrhh_sip_obra_candidato_cuenta_gasto: row.cf_rrhh_sip_obra_candidato_cuenta_gasto,
 		cf_rrhh_sip_obra_candidato_tipo_contrato: tipo,
 		cf_rrhh_sip_obra_candidato_fecha_ingreso: parseDateInput(row.cf_rrhh_sip_obra_candidato_fecha_ingreso),
@@ -1185,6 +1268,7 @@ const onFichaSelect = async () => {
 			tipo === 'Plazo Fijo' ? parseDateInput(terminoRaw as string | null) : null;
 		fechaTerminoHito.value = mapped.formPatch.cf_rrhh_sip_obra_candidato_fecha_termino_ito || null;
 		form.cf_rrhh_sip_obra_candidato_anticipo = 'Sí';
+		ensureJefeOption();
 
 		if (mapped.formPatch.cf_rrhh_sip_obra_candidato_ci) {
 			docMeta.ci = { name: String(mapped.formPatch.cf_rrhh_sip_obra_candidato_ci).split('/').pop() || 'cédula', sizeMb: '' };
@@ -1404,8 +1488,11 @@ const buildPayload = (): SipoCandidatoWritePayload => ({
 	cf_rrhh_sip_obra_candidato_numcta: form.cf_rrhh_sip_obra_candidato_numcta,
 	cf_rrhh_sip_obra_candidato_anticipo: 'Sí',
 	cf_rrhh_sip_obra_candidato_nomcar: form.cf_rrhh_sip_obra_candidato_nomcar,
+	cf_rrhh_sip_obra_candidato_jefe_user_id: form.cf_rrhh_sip_obra_candidato_jefe_user_id,
+	cf_rrhh_sip_obra_candidato_jefe_nombre: form.cf_rrhh_sip_obra_candidato_jefe_nombre,
+	cf_rrhh_sip_obra_candidato_jefe_correo: form.cf_rrhh_sip_obra_candidato_jefe_correo,
 	cf_rrhh_sip_obra_candidato_horario_trabajo: form.cf_rrhh_sip_obra_candidato_horario_trabajo,
-	cf_rrhh_sip_obra_candidato_sueldo: String(form.cf_rrhh_sip_obra_candidato_sueldo || ''),
+	cf_rrhh_sip_obra_candidato_sueldo: String(parseMontoCl(form.cf_rrhh_sip_obra_candidato_sueldo) ?? ''),
 	cf_rrhh_sip_obra_candidato_cuenta_gasto: form.cf_rrhh_sip_obra_candidato_cuenta_gasto,
 	cf_rrhh_sip_obra_candidato_tipo_contrato: form.cf_rrhh_sip_obra_candidato_tipo_contrato,
 	cf_rrhh_sip_obra_candidato_fecha_ingreso: toDateStr(form.cf_rrhh_sip_obra_candidato_fecha_ingreso) || '',
@@ -1452,6 +1539,24 @@ const submit = async () => {
 		return;
 	}
 	form.cf_rrhh_sip_obra_candidato_rut = rutFormatted;
+	try {
+		const rutCheck = await SipoService.validarRut(rutFormatted, props.sipId);
+		if (rutCheck?.status !== 200) {
+			rutWarning.value = 'No se pudo verificar el RUT en SAP. Intente nuevamente.';
+			global.utl.genToast(global.tstType.FORM_ERROR);
+			return;
+		}
+		if (rutCheck.data?.activo_ibuilder_sap) {
+			rutWarning.value = rutCheck.data.mensaje || 'El trabajador aún está activo en SAP.';
+			showRutAlert(rutWarning.value);
+			global.utl.genToast(global.tstType.FORM_ERROR);
+			return;
+		}
+	} catch {
+		rutWarning.value = 'No se pudo verificar el RUT en SAP. Intente nuevamente.';
+		global.utl.genToast(global.tstType.FORM_ERROR);
+		return;
+	}
 
 	saving.value = true;
 	global.utl.showLoader();
@@ -1474,7 +1579,56 @@ const submit = async () => {
 	}
 };
 
+const stopPortalPoll = () => {
+	if (portalPoll) {
+		clearInterval(portalPoll);
+		portalPoll = null;
+	}
+};
+
+const refrescarDesdePortal = async () => {
+	if (!editingId.value) return;
+	const response = await SipoService.getCandidatos(props.sipId);
+	const row = (response.data || []).find((c) => c.cf_rrhh_sip_obra_candidato_id === editingId.value);
+	if (row) fillFromCandidato(row);
+};
+
+const abrirPortalQr = async () => {
+	if (!editingId.value) return;
+	generandoQr.value = true;
+	try {
+		const response = await SipoService.generarAccesoCandidato(props.sipId, editingId.value);
+		qrData.value = response.data;
+		qrVisible.value = true;
+		stopPortalPoll();
+		portalPoll = setInterval(() => {
+			void refrescarDesdePortal();
+		}, 5000);
+	} finally {
+		generandoQr.value = false;
+	}
+};
+
+const copiarEnlace = async () => {
+	const url = qrData.value?.url;
+	if (!url) return;
+	await navigator.clipboard.writeText(url);
+	useToastStore().show({
+		severity: ToastSeverityMessageEnum.SUCCESS,
+		summary: 'Enlace copiado',
+		life: 2500,
+	});
+};
+
+onUnmounted(stopPortalPoll);
+
+watch(qrVisible, (open) => {
+	if (!open) stopPortalPoll();
+});
+
 const onHide = () => {
+	stopPortalPoll();
+	qrVisible.value = false;
 	resetForm();
 	tipoCandidato.value = 'nuevo';
 	editingId.value = null;
@@ -1526,10 +1680,11 @@ watch(
 		}
 
 		try {
-			await Promise.all([loadMaestros(), loadCargosByEmpresa()]);
+			await Promise.all([loadMaestros(), loadCargosByEmpresa(), loadJefes()]);
 			if (hasCandidato && candidato) {
 				fillFromCandidato(candidato);
 				syncCargoSelection();
+				ensureJefeOption();
 			}
 		} finally {
 			isLoadingDetail.value = false;

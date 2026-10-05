@@ -70,10 +70,11 @@ const security = useSecurityStore();
 const avatarLoadFailed = ref(false);
 
 const isAdmin = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.ADMIN);
+const isSupervisor = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR);
 
 const filterSidebarItems = (source: SidebarItemInterface[]): SidebarItemInterface[] =>
 	source
-		.filter((item) => !item.sipoRolAdminOnly || isAdmin.value)
+		.filter((item) => (!item.sipoRolAdminOnly || isAdmin.value) && !(item.ocultoSupervisor && isSupervisor.value))
 		.map((item) => {
 			if (!item.children?.length) return item;
 			return {

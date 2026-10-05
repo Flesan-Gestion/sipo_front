@@ -80,6 +80,11 @@ export class SipoFichasService {
 		return response.data;
 	}
 
+	static async generarAcceso(id: number) {
+		const response = await axios.post(`${SipoFichasService.url}/sipo/fichas/${id}/acceso/`);
+		return response.data;
+	}
+
 	static async eliminar(id: number): Promise<ApiResponse<{ id: number; deleted: boolean }>> {
 		const response = await axios.delete(`${SipoFichasService.url}/sipo/fichas/${id}/`);
 		return response.data;

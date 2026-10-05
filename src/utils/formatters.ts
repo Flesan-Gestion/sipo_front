@@ -1,7 +1,7 @@
 export const parseMontoCl = (value: string | number | null | undefined): number | null => {
 	if (value === null || value === undefined || value === '') return null;
 	if (typeof value === 'number') return Math.round(value);
-	const raw = String(value).trim();
+	const raw = String(value).trim().replace(/\$/g, '').replace(/\s/g, '');
 	if (!raw) return null;
 	if (/^\d{1,3}(\.\d{3})+$/.test(raw)) return Number(raw.replace(/\./g, ''));
 	if (/^\d+$/.test(raw)) return Number(raw);
@@ -17,9 +17,5 @@ export const formatMontoCl = (
 ): string => {
 	const num = parseMontoCl(value);
 	if (num === null) return empty;
-	return new Intl.NumberFormat('es-CL', {
-		style: 'currency',
-		currency: 'CLP',
-		maximumFractionDigits: 0,
-	}).format(num);
+	return `$${num.toLocaleString('es-CL')}`;
 };

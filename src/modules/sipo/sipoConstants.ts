@@ -186,6 +186,9 @@ export interface SipoCandidato {
 	cf_rrhh_sip_obra_candidato_numcta?: string | null;
 	cf_rrhh_sip_obra_candidato_anticipo?: string | null;
 	cf_rrhh_sip_obra_candidato_nomcar: string | null;
+	cf_rrhh_sip_obra_candidato_jefe_user_id?: string | null;
+	cf_rrhh_sip_obra_candidato_jefe_nombre?: string | null;
+	cf_rrhh_sip_obra_candidato_jefe_correo?: string | null;
 	cf_rrhh_sip_obra_candidato_horario_trabajo?: string | null;
 	cf_rrhh_sip_obra_candidato_sueldo: string | null;
 	cf_rrhh_sip_obra_sueldo_base?: number | string | null;
@@ -317,8 +320,8 @@ export function resolveSueldoWarning(sueldo: string, cargo: string, horario: str
 	if (cargoU.includes('ALUMNO EN PRACTICA') || cargoU.includes('PRACTICA PROFESIONAL')) {
 		return null;
 	}
-	if (monto > 0 && monto <= 581000) {
-		return 'El monto Líquido Pactado no puede ser menor a 581.000 pesos';
+	if (monto > 0 && monto < 585000) {
+		return 'El monto Líquido Pactado no puede ser menor a 585.000 pesos';
 	}
 	return null;
 }

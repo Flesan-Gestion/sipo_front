@@ -66,6 +66,14 @@
 						<InputText :modelValue="formatFecha(ficha.fecha_ingreso)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-6">
+						<label class="font-semibold text-sm">Jefe Directo</label>
+						<InputText
+							:modelValue="jefeDirectoLabel"
+							class="w-full"
+							readonly
+						/>
+					</div>
+					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Correo Jefe Directo</label>
 						<InputText :modelValue="display(ficha.correo_jefe_directo)" class="w-full" readonly />
 					</div>
@@ -84,11 +92,11 @@
 						<InputText :modelValue="display(ficha.nombres)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-4">
-						<label class="font-semibold text-sm">Apellido Paterno</label>
+						<label class="font-semibold text-sm">Primer Apellido</label>
 						<InputText :modelValue="display(ficha.apellido_paterno)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-4">
-						<label class="font-semibold text-sm">Apellido Materno</label>
+						<label class="font-semibold text-sm">Segundo Apellido</label>
 						<InputText :modelValue="display(ficha.apellido_materno)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-4">
@@ -199,7 +207,7 @@
 				<div class="grid formgrid p-fluid">
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Sueldo Líquido (NO costo empresa)</label>
-						<InputText :modelValue="formatMoney(ficha.sueldo_liquido)" class="w-full" readonly />
+						<InputText :modelValue="formatMontoCl(ficha.sueldo_liquido)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Cuenta de gasto</label>
@@ -275,6 +283,13 @@
 					@click="onAprobar"
 				/>
 				<Button
+					v-if="ficha?.can_editar"
+					label="Editar"
+					icon="pi pi-pencil"
+					severity="warning"
+					@click="onEditar"
+				/>
+				<Button
 					v-if="ficha?.can_retroceder"
 					label="Retroceder aprobación"
 					icon="pi pi-replay"
@@ -298,11 +313,13 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useGlobalStore } from '../../../store/global';
 import { ToastSeverityMessageEnum } from '../../../shared/interfaces/toast-message.interface';
+import { formatMontoCl } from '../../../utils/formatters';
 import { SipoFichasService } from '../services/SipoFichasService';
-import logoGrupoFicha from '../../../assets/img/logo_grupo_flesan_ficha.png';
+import logoGrupoFicha from '../../../assets/img/logo_grupo_flesan.png';
 
 const props = defineProps<{
 	visible: boolean;
@@ -317,6 +334,7 @@ const emit = defineEmits<{
 }>();
 
 const global = useGlobalStore();
+const router = useRouter();
 const loading = ref(false);
 const aprobando = ref(false);
 const retrocediendo = ref(false);
@@ -332,6 +350,13 @@ const display = (value: unknown) => {
 	if (value === null || value === undefined || value === '') return '—';
 	return String(value);
 };
+
+const jefeDirectoLabel = computed(() => {
+	const nombre = String(ficha.value?.jefe_nombre || '').trim();
+	const correo = String(ficha.value?.jefe_correo || '').trim();
+	if (nombre && correo) return `${nombre} (${correo})`;
+	return nombre || correo || '—';
+});
 
 const hasValue = (value: unknown) =>
 	value !== null && value !== undefined && String(value).trim() !== '';
@@ -355,21 +380,15 @@ const formatFecha = (value: unknown) => {
 	return `${m[3]}-${m[2]}-${m[1]}`;
 };
 
-const formatMoney = (value: unknown) => {
-	if (value === null || value === undefined || value === '') return '—';
-	const n = Number(value);
-	if (Number.isNaN(n)) return display(value);
-	return `$ ${n.toLocaleString('es-CL')}`;
-};
-
 const estadoSeverity = (estado: unknown) => {
 	switch (String(estado || '').toUpperCase()) {
 		case 'PENDIENTE_JEFE_TERRENO':
 		case 'PENDIENTE_JEFE':
-			return 'warn';
 		case 'PENDIENTE_RRHH':
 		case 'PENDIENTE_ADMIN':
-			return 'info';
+		case 'PENDIENTE_DATOS_COLABORADOR':
+		case 'BORRADOR_SUPERVISOR':
+			return 'warn';
 		case 'APROBADA':
 			return 'success';
 		case 'RECHAZADA':
@@ -467,6 +486,12 @@ const loadDetalle = async (id: number) => {
 	} finally {
 		loading.value = false;
 	}
+};
+
+const onEditar = () => {
+	if (!props.fichaId) return;
+	visibleProxy.value = false;
+	router.push({ name: 'SipoFichaIngresoEdit', params: { id: String(props.fichaId) } });
 };
 
 const onAprobar = () => {

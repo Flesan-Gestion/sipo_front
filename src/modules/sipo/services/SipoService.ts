@@ -185,6 +185,35 @@ export class SipoService {
 		return response.data;
 	}
 
+	static async getPersonalPlanta(centroCosto: string): Promise<
+		ApiResponse<{ user_id: string; nombre: string; correo: string; label: string }[]>
+	> {
+		const response = await axios.get(`${SipoService.url}/sipo/maestros/personal-planta/`, {
+			params: { centro_costo: centroCosto },
+		});
+		return response.data;
+	}
+
+	static async generarAccesoCandidato(sipId: number, candidatoId: string) {
+		const response = await axios.post(
+			`${SipoService.url}/sipo/${sipId}/candidatos/${candidatoId}/acceso/`
+		);
+		return response.data;
+	}
+
+	static async getPortalCandidato(token: string) {
+		const response = await axios.get(`${SipoService.url}/sipo/public/ficha/${token}/`);
+		return response.data;
+	}
+
+	static async guardarPortalCandidato(token: string, formData: FormData) {
+		const response = await axios.post(
+			`${SipoService.url}/sipo/public/ficha/${token}/`,
+			formData
+		);
+		return response.data;
+	}
+
 	static async validarCorreo(email: string): Promise<ApiResponse<{ valido: boolean }>> {
 		const response = await axios.get(`${SipoService.url}/sipo/candidatos/validar-correo/`, {
 			params: { email },
