@@ -14,6 +14,7 @@ export const SidebarItems: SidebarItemInterface[] = [
         icon: 'pi-users',
         type: SidebarTypeItemEnum.ITEM,
         ocultoSupervisor: true,
+        ocultoJefeTerreno: true,
     },
     {
         name: 'Ficha Ingreso Personal',
@@ -23,6 +24,7 @@ export const SidebarItems: SidebarItemInterface[] = [
             {
                 name: 'Crear Nueva Ficha',
                 pathName: 'SipoFichaIngresoCreate',
+                ocultoJefeTerreno: true,
             },
             {
                 name: 'Historial de Fichas',
@@ -35,6 +37,7 @@ export const SidebarItems: SidebarItemInterface[] = [
         icon: 'pi-cog',
         type: SidebarTypeItemEnum.DROPDOWN_ITEMS,
         ocultoSupervisor: true,
+        ocultoJefeTerreno: true,
         children: [
             {
                 name: 'Usuarios',

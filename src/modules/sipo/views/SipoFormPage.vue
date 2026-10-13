@@ -16,15 +16,6 @@
 				</div>
 				<div class="flex align-items-center gap-2 flex-wrap">
 					<Button
-						v-if="showSyncSap"
-						label="Sincronizar SAP"
-						icon="pi pi-sync"
-						severity="help"
-						outlined
-						:loading="syncingSap"
-						@click="onSyncSap"
-					/>
-					<Button
 						v-if="isCreate"
 						label="Guardar"
 						icon="pi pi-save"
@@ -473,13 +464,6 @@ const showTabSeleccionados = computed(() => {
 	return count > 0 || closed;
 });
 
-const showSyncSap = computed(() => {
-	if (isCreate.value || !canApprove.value || !detail.value) return false;
-	const status = Number(detail.value.cf_rrhh_sip_status ?? 0);
-	const seleccionados = Number(detail.value.candidatos_seleccionados_count ?? 0);
-	return status === 8 || status === 10 || status === 11 || seleccionados > 0;
-});
-
 const seleccionadosTabIndex = computed(() => (showTabSeleccionados.value ? 2 : -1));
 
 const onDetailTabChange = (event: { index: number }) => {
@@ -493,7 +477,6 @@ const canEditPartialHeader = computed(() => !isCreate.value && canSubmit.value);
 
 const detail = ref<SipoObraDetail | null>(null);
 const loading = ref(false);
-const syncingSap = ref(false);
 const savingAsistente = ref(false);
 const savingUbicacion = ref(false);
 const canSubmit = ref(true);
@@ -712,45 +695,6 @@ const onSeleccionadosChanged = (count: number) => {
 const onContratacionAprobada = async () => {
 	await reloadDetail();
 	seleccionadosPanelRef.value?.load?.();
-};
-
-const onSyncSap = async () => {
-	if (!sipId.value) return;
-	syncingSap.value = true;
-	try {
-		const response = await SipoService.syncSap(sipId.value);
-		if (response?.status === 200) {
-			global.utl.genCustomeToast(
-				ToastSeverityMessageEnum.SUCCESS,
-				'SAP SuccessFactors',
-				String(response.data?.message || 'Sincronización con SAP ejecutada correctamente')
-			);
-			await reloadDetail();
-			seleccionadosPanelRef.value?.load?.();
-			return;
-		}
-		const detailMsg =
-			(response as any)?.detail ||
-			(response as any)?.data?.detail ||
-			'No se pudo sincronizar con SAP.';
-		global.utl.genCustomeToast(
-			ToastSeverityMessageEnum.ERROR,
-			'SAP SuccessFactors',
-			String(detailMsg)
-		);
-	} catch (err: any) {
-		const msg =
-			err?.response?.data?.detail ||
-			err?.message ||
-			'Error de conexión con SAP.';
-		global.utl.genCustomeToast(
-			ToastSeverityMessageEnum.ERROR,
-			'SAP SuccessFactors',
-			String(msg)
-		);
-	} finally {
-		syncingSap.value = false;
-	}
 };
 
 const onEstadoChanged = async () => {

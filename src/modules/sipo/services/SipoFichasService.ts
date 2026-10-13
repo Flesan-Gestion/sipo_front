@@ -42,6 +42,27 @@ export class SipoFichasService {
 		return response.data;
 	}
 
+	static async exportarExcel(params: {
+		search?: string;
+		estado?: string | null;
+		razonSocialId?: string | null;
+		centroCostoId?: string | null;
+	} = {}): Promise<Blob> {
+		const response = await axios.get(
+			`${SipoFichasService.url}/sipo/fichas/exportar-excel/`,
+			{
+				params: {
+					search: params.search || undefined,
+					estado: params.estado || undefined,
+					razon_social_id: params.razonSocialId || undefined,
+					centro_costo_id: params.centroCostoId || undefined,
+				},
+				responseType: 'blob',
+			}
+		);
+		return response.data;
+	}
+
 	static async create(formData: FormData): Promise<ApiResponse<Record<string, unknown>>> {
 		const response = await axios.post(`${SipoFichasService.url}/sipo/fichas/`, formData);
 		return response.data;
@@ -82,6 +103,13 @@ export class SipoFichasService {
 
 	static async generarAcceso(id: number) {
 		const response = await axios.post(`${SipoFichasService.url}/sipo/fichas/${id}/acceso/`);
+		return response.data;
+	}
+
+	static async reenviarInvitacion(id: number) {
+		const response = await axios.post(
+			`${SipoFichasService.url}/sipo/fichas/${id}/reenviar-invitacion/`
+		);
 		return response.data;
 	}
 

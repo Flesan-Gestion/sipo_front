@@ -15,8 +15,15 @@ export const findOptionValue = (options: Opt[] | undefined, raw: unknown): strin
 	const lower = text.toLowerCase();
 	const byLabel = list.find((o) => String(o.label || '').trim().toLowerCase() === lower);
 	if (byLabel) return String(byLabel.value);
+	const codeInParens = text.match(/\(([A-Za-z0-9._-]+)\)\s*$/);
+	if (codeInParens) {
+		const code = codeInParens[1];
+		const byCode = list.find((o) => String(o.value) === code);
+		if (byCode) return String(byCode.value);
+	}
 	const byIncludes = list.find((o) => {
 		const label = String(o.label || '').trim().toLowerCase();
+		if (!label) return false;
 		return label.includes(lower) || lower.includes(label);
 	});
 	return byIncludes ? String(byIncludes.value) : null;

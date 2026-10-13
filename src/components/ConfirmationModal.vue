@@ -30,14 +30,20 @@ const global = useGlobalStore();
 const confirmation = useConfirmationStore();
 
 const accept = async () => {
-	await confirmation.accept();
+	const fn = confirmation.accept;
 	confirmation.hidden();
-}
+	if (typeof fn === 'function') {
+		await fn();
+	}
+};
 
 const reject = async () => {
-	await confirmation.reject();
+	const fn = confirmation.reject;
 	confirmation.hidden();
-}
+	if (typeof fn === 'function') {
+		await fn();
+	}
+};
 </script>
 <style scoped>
 .dialog-width {

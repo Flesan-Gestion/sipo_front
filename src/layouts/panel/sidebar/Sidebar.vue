@@ -71,15 +71,25 @@ const avatarLoadFailed = ref(false);
 
 const isAdmin = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.ADMIN);
 const isSupervisor = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR);
+const isJefeTerreno = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.JEFE_TERRENO);
 
 const filterSidebarItems = (source: SidebarItemInterface[]): SidebarItemInterface[] =>
 	source
-		.filter((item) => (!item.sipoRolAdminOnly || isAdmin.value) && !(item.ocultoSupervisor && isSupervisor.value))
+		.filter(
+			(item) =>
+				(!item.sipoRolAdminOnly || isAdmin.value) &&
+				!(item.ocultoSupervisor && isSupervisor.value) &&
+				!(item.ocultoJefeTerreno && isJefeTerreno.value)
+		)
 		.map((item) => {
 			if (!item.children?.length) return item;
 			return {
 				...item,
-				children: item.children.filter((child) => !child.sipoRolAdminOnly || isAdmin.value),
+				children: item.children.filter(
+					(child) =>
+						(!child.sipoRolAdminOnly || isAdmin.value) &&
+						!(child.ocultoJefeTerreno && isJefeTerreno.value)
+				),
 			};
 		})
 		.filter((item) => item.type !== SidebarTypeItemEnum.DROPDOWN_ITEMS || (item.children && item.children.length > 0));

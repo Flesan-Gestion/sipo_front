@@ -51,7 +51,7 @@
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Centro de Costo</label>
-						<InputText :modelValue="display(ficha.centro_costo_id)" class="w-full" readonly />
+						<InputText :modelValue="centroCostoLabel" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Descripción Centro Costo</label>
@@ -78,7 +78,7 @@
 						<InputText :modelValue="display(ficha.correo_jefe_directo)" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">Correo Administrador de Obra</label>
+						<label class="font-semibold text-sm">Correo Jefe de Terreno</label>
 						<InputText :modelValue="display(ficha.correo_admin_obra)" class="w-full" readonly />
 					</div>
 				</div>
@@ -125,7 +125,7 @@
 					</div>
 					<div class="field col-12 md:col-4">
 						<label class="font-semibold text-sm">Género</label>
-						<InputText :modelValue="display(ficha.genero)" class="w-full" readonly />
+						<InputText :modelValue="generoLabel" class="w-full" readonly />
 					</div>
 					<div class="field col-12 md:col-4">
 						<label class="font-semibold text-sm">Fecha de Nacimiento</label>
@@ -235,7 +235,7 @@
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">Horario</label>
-						<InputText :modelValue="display(ficha.horario)" class="w-full" readonly />
+						<InputText :modelValue="horarioLabel" class="w-full" readonly />
 					</div>
 				</div>
 
@@ -319,6 +319,7 @@ import { useGlobalStore } from '../../../store/global';
 import { ToastSeverityMessageEnum } from '../../../shared/interfaces/toast-message.interface';
 import { formatMontoCl } from '../../../utils/formatters';
 import { SipoFichasService } from '../services/SipoFichasService';
+import { GENERO_OPTIONS } from '../sipoConstants';
 import logoGrupoFicha from '../../../assets/img/logo_grupo_flesan.png';
 
 const props = defineProps<{
@@ -356,6 +357,33 @@ const jefeDirectoLabel = computed(() => {
 	const correo = String(ficha.value?.jefe_correo || '').trim();
 	if (nombre && correo) return `${nombre} (${correo})`;
 	return nombre || correo || '—';
+});
+
+const centroCostoLabel = computed(() => {
+	const nombre = String(ficha.value?.centro_costo_nombre || '').trim();
+	const code = String(ficha.value?.centro_costo_id || '').trim();
+	if (nombre) return nombre;
+	return code || '—';
+});
+
+const generoLabel = computed(() => {
+	const raw = ficha.value?.genero;
+	if (raw == null || raw === '') return '—';
+	const found = GENERO_OPTIONS.find((o) => String(o.value) === String(raw).trim().toUpperCase());
+	if (found) return found.label;
+	const key = String(raw).trim().toUpperCase();
+	if (key === 'MASCULINO' || key === 'HOMBRE') return 'Masculino';
+	if (key === 'FEMENINO' || key === 'MUJER') return 'Femenino';
+	return String(raw);
+});
+
+const horarioLabel = computed(() => {
+	const label = String(ficha.value?.horario_label || '').trim();
+	const code = String(ficha.value?.horario || '').trim();
+	if (label && code && label !== code) {
+		return label.includes(code) ? label : `${label} (${code})`;
+	}
+	return label || code || '—';
 });
 
 const hasValue = (value: unknown) =>
@@ -514,12 +542,12 @@ const onAprobar = () => {
 				if (Number(res?.status) !== 200 || !res?.data) {
 					throw new Error(res?.detail || 'No se pudo aprobar');
 				}
-				ficha.value = res.data as Record<string, any>;
 				global.utl.genCustomeToast(
 					ToastSeverityMessageEnum.SUCCESS,
 					'Aprobación',
 					`Ficha #${id} aprobada exitosamente por ${por}.`
 				);
+				visibleProxy.value = false;
 				emit('aprobada');
 			} catch {
 				global.utl.genCustomeToast(

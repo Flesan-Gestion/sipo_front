@@ -11,6 +11,7 @@
 import { AuthCodeFlowSuccessResponse, useTokenClient } from 'vue3-google-signin';
 import { useGlobalStore } from '../../store/global';
 import { useSecurityStore } from '../../store/security';
+import { RolesEnum } from '../../shared/enums/roles.enum';
 import { AuthService } from './services/AuthService';
 import { onMounted } from 'vue';
 
@@ -31,7 +32,12 @@ const handleOnSuccess = async (response: AuthCodeFlowSuccessResponse) => {
 	}
 	security.setUser(authResponse.data);
 	global.utl.hiddenLoader();
-	global.utl.navigate('SipoList');
+	const rolId = Number(security.user?.sip_rol_id);
+	global.utl.navigate(
+		rolId === RolesEnum.SUPERVISOR || rolId === RolesEnum.JEFE_TERRENO
+			? 'SipoFichaIngresoHistorial'
+			: 'SipoList'
+	);
 };
 
 const handleOnError = () => { };

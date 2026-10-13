@@ -22,6 +22,15 @@
 							</div>
 							<div class="flex gap-2">
 								<Button
+									label="Exportar Excel"
+									icon="pi pi-file-excel"
+									severity="success"
+									:loading="exportandoExcel"
+									:disabled="!fichasFiltradas.length"
+									@click="onExportExcel"
+								/>
+								<Button
+									v-if="!isJefeTerreno"
 									label="Crear Nueva Ficha"
 									icon="pi pi-plus"
 									@click="router.push({ name: 'SipoFichaIngresoCreate' })"
@@ -262,9 +271,12 @@
 						/>
 					</template>
 				</Column>
-				<Column field="creadoPor" header="Creado por" style="min-width: 14rem">
+				<Column field="creadoPor" header="Creado por" style="min-width: 16rem">
 					<template #body="{ data }">
-						<span v-if="data.creadoPor">{{ data.creadoPor }}</span>
+						<div v-if="data.creadoPor || data.creadoAt" class="flex flex-column gap-1">
+							<span v-if="data.creadoPor">{{ data.creadoPor }}</span>
+							<small v-if="data.creadoAt" class="text-color-secondary">{{ formatFechaHora(data.creadoAt) }}</small>
+						</div>
 						<span v-else class="text-color-secondary">Sin asignar</span>
 					</template>
 				</Column>
@@ -275,7 +287,7 @@
 			v-model:visible="detalleVisible"
 			:ficha-id="detalleId"
 			@eliminada="onFichaEliminada"
-			@aprobada="() => loadFichas(false)"
+			@aprobada="onFichaAprobada"
 			@retrocedida="() => loadFichas(false)"
 		/>
 	</div>
@@ -309,6 +321,7 @@ interface FichaHistorialRow {
 	canEliminar: boolean;
 	accionAprobarLabel: string;
 	creadoPor: string;
+	creadoAt: string;
 }
 
 const router = useRouter();
@@ -317,11 +330,15 @@ const security = useSecurityStore();
 const isSupervisor = computed(
 	() => Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR
 );
+const isJefeTerreno = computed(
+	() => Number(security.user?.sip_rol_id) === RolesEnum.JEFE_TERRENO
+);
 const isPageLoading = ref(false);
 const loading = ref(false);
 const aprobandoId = ref<number | null>(null);
 const retrocediendoId = ref<number | null>(null);
 const eliminandoId = ref<number | null>(null);
+const exportandoExcel = ref(false);
 const fichas = ref<FichaHistorialRow[]>([]);
 const filterSearch = ref('');
 const filterEstado = ref<string | null>(null);
@@ -429,6 +446,42 @@ const onRazonSocialFilterChange = () => {
 	}
 };
 
+const onExportExcel = async () => {
+	if (exportandoExcel.value) return;
+	exportandoExcel.value = true;
+	global.utl.showLoader();
+	try {
+		const blob = await SipoFichasService.exportarExcel({
+			search: filterSearch.value.trim() || undefined,
+			estado: filterEstado.value,
+			razonSocialId: filterRazonSocial.value,
+			centroCostoId: filterCentroCosto.value,
+		});
+		const contentType = String(blob.type || '').toLowerCase();
+		if (contentType.includes('application/json')) {
+			const detail = await blob.text();
+			throw new Error(detail || 'No se pudo exportar el Excel.');
+		}
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = 'Reporte_Fichas_Ingreso.xlsx';
+		document.body.appendChild(anchor);
+		anchor.click();
+		anchor.remove();
+		URL.revokeObjectURL(url);
+	} catch (err: any) {
+		global.utl.genCustomeToast(
+			ToastSeverityMessageEnum.ERROR,
+			'Exportación Excel',
+			String(err?.message || 'No se pudo descargar el Excel de fichas.')
+		);
+	} finally {
+		exportandoExcel.value = false;
+		global.utl.hiddenLoader();
+	}
+};
+
 const limpiarFiltros = () => {
 	filterSearch.value = '';
 	filterEstado.value = null;
@@ -455,6 +508,19 @@ const formatFecha = (value: string) => {
 	const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
 	if (!m) return value || '—';
 	return `${m[3]}-${m[2]}-${m[1]}`;
+};
+
+const formatFechaHora = (value: string) => {
+	if (!value) return '';
+	const d = new Date(value);
+	if (Number.isNaN(d.getTime())) return value;
+	return d.toLocaleString('es-CL', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	});
 };
 
 const estadoSeverity = (estado: string) => {
@@ -521,6 +587,7 @@ const loadFichas = async (managePageLoader = true) => {
 			canEliminar: Boolean(r.can_eliminar),
 			accionAprobarLabel: r.accion_aprobar_label || 'Aprobar',
 			creadoPor: r.creado_por || '',
+			creadoAt: r.created_at || '',
 		}));
 	} catch {
 		global.utl.genCustomeToast(
@@ -545,6 +612,12 @@ const onEditarFicha = (row: FichaHistorialRow) => {
 };
 
 const onFichaEliminada = async () => {
+	detalleVisible.value = false;
+	detalleId.value = null;
+	await loadFichas(false);
+};
+
+const onFichaAprobada = async () => {
 	detalleVisible.value = false;
 	detalleId.value = null;
 	await loadFichas(false);
@@ -610,6 +683,10 @@ const onAprobar = (row: FichaHistorialRow) => {
 					'Aprobación',
 					`Ficha #${row.id} aprobada exitosamente por ${por}.`
 				);
+				if (detalleId.value === row.id) {
+					detalleVisible.value = false;
+					detalleId.value = null;
+				}
 				await loadFichas(false);
 			} catch (err: any) {
 				const msg =

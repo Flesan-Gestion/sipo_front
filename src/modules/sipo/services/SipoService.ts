@@ -151,13 +151,6 @@ export class SipoService {
 		return response.data;
 	}
 
-	static async syncSap(
-		sipId: number
-	): Promise<ApiResponse<{ message?: string; candidatos_procesados?: number } & Record<string, unknown>>> {
-		const response = await axios.post(`${SipoService.url}/sipo/${sipId}/sync-sap/`);
-		return response.data;
-	}
-
 	static async getMaestros(
 		rut?: string,
 		externalCodePais?: string
@@ -167,6 +160,15 @@ export class SipoService {
 		if (externalCodePais) params.external_code_pais = externalCodePais;
 		const response = await axios.get(`${SipoService.url}/sipo/maestros/`, {
 			params: Object.keys(params).length ? params : undefined,
+		});
+		return response.data;
+	}
+
+	static async getEmpresasPorCargo(
+		cargo: string
+	): Promise<ApiResponse<{ cargo: string; ruts: string[] }>> {
+		const response = await axios.get(`${SipoService.url}/sipo/empresas-por-cargo/`, {
+			params: { cargo },
 		});
 		return response.data;
 	}

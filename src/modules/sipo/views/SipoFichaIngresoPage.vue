@@ -30,9 +30,15 @@
 							showClear
 							placeholder="Seleccionar razón social"
 							:class="fc('razonSocial')"
-							:loading="loadingMaestros"
+							:loading="loadingMaestros || loadingRutsCargo"
 							@change="onRazonSocialChange"
 						/>
+						<small v-if="razonSocialFiltradaPorCargo" class="text-color-secondary block mt-1">
+							Filtrado por cargo: {{ form.seccion1.cargo }}
+							<template v-if="rutsConCargo && !rutsConCargo.length">
+								— sin empresas con ese cargo
+							</template>
+						</small>
 					</div>
 					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">(*) Obra</label>
@@ -64,21 +70,6 @@
 						/>
 					</div>
 					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Descripción Centro Costo</label>
-						<Dropdown
-							v-model="form.seccion1.descripcionCentroCosto"
-							:options="descripcionCentroOptions"
-							optionLabel="label"
-							optionValue="value"
-							filter
-							showClear
-							placeholder="Seleccionar descripción"
-							:class="fc('descripcionCentroCosto')"
-							:disabled="!form.seccion1.razonSocial"
-							@change="onDescripcionCentroChange"
-						/>
-					</div>
-					<div class="field col-12 md:col-6">
 						<label class="font-semibold text-sm">(*) Jefe Directo</label>
 						<Dropdown
 							v-model="form.seccion1.jefeUserId"
@@ -97,25 +88,7 @@
 						/>
 					</div>
 					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Correo Jefe Directo</label>
-						<InputText
-							v-model="form.seccion1.correoJefeDirecto"
-							type="email"
-							:class="fc('correoJefeDirecto', emailErrors.correoJefeDirecto)"
-							:disabled="validatingEmail.correoJefeDirecto"
-							placeholder="correo@empresa.cl"
-							@input="clearEmailError('correoJefeDirecto')"
-							@blur="validateEmailField('correoJefeDirecto', form.seccion1.correoJefeDirecto)"
-						/>
-						<small v-if="validatingEmail.correoJefeDirecto" class="text-xs text-color-secondary block mt-1">
-							Verificando correo...
-						</small>
-						<small v-else-if="emailErrors.correoJefeDirecto" class="p-error block mt-1">
-							{{ emailErrors.correoJefeDirecto }}
-						</small>
-					</div>
-					<div class="field col-12 md:col-6">
-						<label class="font-semibold text-sm">(*) Correo Administrador de Obra</label>
+						<label class="font-semibold text-sm">(*) Correo Jefe de Terreno</label>
 						<InputText
 							v-model="form.seccion1.correoAdminObra"
 							type="email"
@@ -249,18 +222,38 @@
 
 		<section v-show="paso === 'enlace'" class="ficha-section border-1 border-300 border-round bg-white p-4">
 			<h3 class="ficha-section__title">Datos ingresados por el Supervisor</h3>
-			<div class="grid mt-3">
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Cargo</span><div>{{ form.seccion1.cargo || '—' }}</div></div>
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Fecha de ingreso</span><div>{{ formatFechaCl(form.seccion1.fechaIngreso) }}</div></div>
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Correo del colaborador</span><div>{{ form.seccion1.correoColaborador || '—' }}</div></div>
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Sueldo líquido</span><div>{{ formatSueldoPaso(form.seccion3.sueldoLiquido) }}</div></div>
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Tipo de contrato</span><div>{{ form.seccion3.tipoContrato || '—' }}</div></div>
-				<div class="col-12 md:col-4"><span class="text-color-secondary text-sm">Horario</span><div>{{ labelOf(horarioOptions, form.seccion3.horario) || form.seccion3.horario || '—' }}</div></div>
-				<div v-if="isPlazoFijo" class="col-12 md:col-4"><span class="text-color-secondary text-sm">Término plazo fijo</span><div>{{ formatFechaCl(plazoFijoFecha) }}</div></div>
-				<div v-if="isObraFaena" class="col-12 md:col-4"><span class="text-color-secondary text-sm">HITO</span><div>{{ hitoTexto || '—' }}</div></div>
-				<div v-if="isObraFaena" class="col-12 md:col-4"><span class="text-color-secondary text-sm">Fecha término HITO</span><div>{{ formatFechaCl(fechaTerminoHito) }}</div></div>
+
+			<ol class="enlace-timeline list-none p-0 mx-auto mb-4">
+				<li
+					v-for="step in enlaceTimeline"
+					:key="step.key"
+					class="enlace-timeline__item"
+					:class="{
+						'enlace-timeline__item--done': step.status === 'done',
+						'enlace-timeline__item--active': step.status === 'active',
+					}"
+				>
+					<span class="enlace-timeline__dot">
+						<i v-if="step.status === 'done'" class="pi pi-check" />
+						<span v-else>{{ step.n }}</span>
+					</span>
+					<span class="enlace-timeline__label">{{ step.label }}</span>
+				</li>
+			</ol>
+
+			<div class="grid mt-2">
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Cargo</span><div>{{ form.seccion1.cargo || '—' }}</div></div>
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Fecha de ingreso</span><div>{{ formatFechaCl(form.seccion1.fechaIngreso) }}</div></div>
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Correo del colaborador</span><div>{{ form.seccion1.correoColaborador || '—' }}</div></div>
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Sueldo líquido</span><div>{{ formatSueldoPaso(form.seccion3.sueldoLiquido) }}</div></div>
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Tipo de contrato</span><div>{{ form.seccion3.tipoContrato || '—' }}</div></div>
+				<div class="col-12 md:col-3"><span class="text-color-secondary text-sm">Horario</span><div>{{ labelOf(horarioOptions, form.seccion3.horario) || form.seccion3.horario || '—' }}</div></div>
+				<div v-if="isPlazoFijo" class="col-12 md:col-3"><span class="text-color-secondary text-sm">Término plazo fijo</span><div>{{ formatFechaCl(plazoFijoFecha) }}</div></div>
+				<div v-if="isObraFaena" class="col-12 md:col-3"><span class="text-color-secondary text-sm">HITO</span><div>{{ hitoTexto || '—' }}</div></div>
+				<div v-if="isObraFaena" class="col-12 md:col-3"><span class="text-color-secondary text-sm">Fecha término HITO</span><div>{{ formatFechaCl(fechaTerminoHito) }}</div></div>
 				<div v-if="form.seccion3.observaciones" class="col-12"><span class="text-color-secondary text-sm">Observaciones</span><div>{{ form.seccion3.observaciones }}</div></div>
 			</div>
+
 			<div class="flex flex-column align-items-center gap-3 mt-4 pt-4 border-top-1 border-300">
 				<img v-if="enlaceQr" :src="enlaceQr" alt="Código QR" class="w-12rem" />
 				<a
@@ -268,11 +261,27 @@
 					:href="enlaceUrl"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="m-0 text-sm text-center"
+					class="m-0 text-sm text-center word-break-all max-w-full"
 				>{{ enlaceUrl }}</a>
-				<div class="flex gap-2">
+				<div class="flex flex-wrap justify-content-center gap-2">
 					<Button label="Copiar enlace" icon="pi pi-copy" size="small" @click="copiarEnlace" />
+					<Button
+						label="Reenviar correo"
+						icon="pi pi-send"
+						size="small"
+						severity="success"
+						:loading="reenviandoInvitacion"
+						:disabled="!form.seccion1.correoColaborador"
+						@click="reenviarInvitacion"
+					/>
 					<Button label="Volver" severity="secondary" outlined size="small" @click="paso = 'supervisor'" />
+				</div>
+				<div class="enlace-envio text-center">
+					<small class="text-color-secondary">
+						Invitación enviada a
+						<strong class="text-color">{{ form.seccion1.correoColaborador || '—' }}</strong>
+						{{ formatFechaHoraCl(invitacionEnviadaAt) }}
+					</small>
 				</div>
 				<small class="text-color-secondary">Esperando los datos del colaborador…</small>
 			</div>
@@ -627,14 +636,6 @@
 					@click="router.push({ name: 'SipoFichaIngresoHistorial' })"
 				/>
 				<Button
-					v-if="paso === 'rrhh' && !isSupervisor"
-					label="Imprimir / Exportar"
-					icon="pi pi-print"
-					severity="secondary"
-					outlined
-					@click="onPrint"
-				/>
-				<Button
 					v-if="paso === 'supervisor' && (isSupervisor || !isEditMode)"
 					label="Siguiente"
 					icon="pi pi-arrow-right"
@@ -720,7 +721,34 @@ const puedeEnviarJefe = computed(() => fichaEstado.value === 'PENDIENTE_RRHH');
 const enlaceVisible = ref(false);
 const enlaceUrl = ref('');
 const enlaceQr = ref('');
+const invitacionEnviadaAt = ref<string | null>(null);
+const reenviandoInvitacion = ref(false);
 let fichaPoll: ReturnType<typeof setInterval> | null = null;
+
+const enlaceTimeline = computed(() => {
+	const estado = String(fichaEstado.value || '').toUpperCase();
+	const order = [
+		'BORRADOR_SUPERVISOR',
+		'PENDIENTE_DATOS_COLABORADOR',
+		'PENDIENTE_RRHH',
+		'PENDIENTE_JEFE_TERRENO',
+		'APROBADA',
+		'FINALIZADA',
+	];
+	let idx = Math.max(0, order.indexOf(estado));
+	if (paso.value === 'enlace' && idx < 1) idx = 1;
+	const statusOf = (stepIdx: number): 'done' | 'active' | 'pending' => {
+		if (idx > stepIdx) return 'done';
+		if (idx === stepIdx) return 'active';
+		return 'pending';
+	};
+	return [
+		{ key: 'supervisor', n: 1, label: 'Supervisor', status: statusOf(0) },
+		{ key: 'colaborador', n: 2, label: 'Colaborador', status: statusOf(1) },
+		{ key: 'rrhh', n: 3, label: 'RRHH', status: statusOf(2) },
+		{ key: 'jefe', n: 4, label: 'Jefe', status: statusOf(3) },
+	];
+});
 
 const SUELDO_MIN = 585_000;
 const SUELDO_MAX = 99_999_999;
@@ -761,6 +789,8 @@ const empresas = ref<SipoMaestroEmpresa[]>([]);
 const selectedPais = ref(EXTERNAL_CODE_PAIS_GRUPO_2);
 const ubicaciones = ref<{ external_code: string; nombre: string }[]>([]);
 const cargos = ref<{ external_code: string; nombre: string }[]>([]);
+const rutsConCargo = ref<string[] | null>(null);
+const loadingRutsCargo = ref(false);
 
 const emailErrors = reactive<Record<EmailFieldKey, string>>({
 	correoJefeDirecto: '',
@@ -930,7 +960,6 @@ const validateRequiredFields = (): boolean => {
 		['razonSocial', s1.razonSocial],
 		['obra', s1.obra],
 		['centroCosto', s1.centroCosto],
-		['descripcionCentroCosto', s1.descripcionCentroCosto || s1.centroCosto],
 		['cargo', s1.cargo],
 		['jefeUserId', s1.jefeUserId],
 		['fechaIngreso', s1.fechaIngreso],
@@ -996,8 +1025,18 @@ const validateRequiredFields = (): boolean => {
 	return ok;
 };
 
-const razonSocialOptions = computed(() =>
-	empresas.value.map((e) => ({ label: e.nombre, value: e.external_code }))
+const razonSocialOptions = computed(() => {
+	let list = empresas.value;
+	if (rutsConCargo.value != null && form.seccion1.cargo) {
+		const allowed = new Set(rutsConCargo.value);
+		if (form.seccion1.razonSocial) allowed.add(form.seccion1.razonSocial);
+		list = list.filter((e) => allowed.has(e.external_code));
+	}
+	return list.map((e) => ({ label: e.nombre, value: e.external_code }));
+});
+
+const razonSocialFiltradaPorCargo = computed(
+	() => Boolean(form.seccion1.cargo && rutsConCargo.value != null)
 );
 
 const selectedEmpresa = computed(
@@ -1021,13 +1060,6 @@ const centrosEmpresa = computed(() => {
 const centroCostoOptions = computed(() =>
 	centrosEmpresa.value.map((c) => ({
 		label: `${c.external_code} — ${c.nombre}`.trim(),
-		value: c.external_code,
-	}))
-);
-
-const descripcionCentroOptions = computed(() =>
-	centrosEmpresa.value.map((c) => ({
-		label: c.nombre,
 		value: c.external_code,
 	}))
 );
@@ -1093,8 +1125,13 @@ const isObraFaena = computed(() => form.seccion3.tipoContrato === 'Obra o Faena'
 const isPlazoFijo = computed(() => form.seccion3.tipoContrato === 'Plazo Fijo');
 
 const horarioOptions = computed(() => {
-	if (horariosEmpresa.value.length) return horariosEmpresa.value;
-	return maestros.horarios || [];
+	const source = horariosEmpresa.value.length
+		? horariosEmpresa.value
+		: maestros.horarios || [];
+	return source.filter((h: { label?: string; value?: string }) => {
+		const text = String(h?.label || h?.value || '').toUpperCase();
+		return !text.includes('OBSOLETO') && !text.includes('OBSOLETA');
+	});
 });
 
 const showNacionalidadExt = computed(() => {
@@ -1392,15 +1429,51 @@ const loadEmpresas = async (pais?: string) => {
 	}
 };
 
+const loadRutsPorCargo = async (cargo: string | null | undefined) => {
+	const nombre = String(cargo || '').trim();
+	if (!nombre) {
+		rutsConCargo.value = null;
+		return;
+	}
+	loadingRutsCargo.value = true;
+	try {
+		const response = await SipoService.getEmpresasPorCargo(nombre);
+		rutsConCargo.value =
+			Number(response?.status) === 200 ? response.data?.ruts || [] : [];
+	} catch {
+		rutsConCargo.value = [];
+	} finally {
+		loadingRutsCargo.value = false;
+	}
+};
+
 const loadCargosYObras = async (rut: string) => {
 	loadingCargos.value = true;
+	const cargoPrev = form.seccion1.cargo;
 	try {
 		const response = await SipoService.getMaestros(rut, selectedPais.value);
 		if (response?.status === 200) {
 			const filtradas = soloGrupo2(response.data?.empresas);
 			empresas.value = filtradas.length ? filtradas : empresas.value;
 			ubicaciones.value = response.data?.ubicaciones ?? [];
-			cargos.value = response.data?.cargos ?? [];
+			const list = response.data?.cargos ?? [];
+			const nombre = String(cargoPrev || '').trim();
+			if (nombre) {
+				const exists = list.some(
+					(c: { nombre?: string; external_code?: string }) =>
+						c.nombre === nombre ||
+						c.external_code === nombre ||
+						String(c.nombre || '').toLowerCase() === nombre.toLowerCase()
+				);
+				cargos.value = exists
+					? list
+					: [...list, { external_code: nombre, nombre }];
+			} else {
+				cargos.value = list;
+			}
+			if (cargoPrev) {
+				form.seccion1.cargo = nombre || cargoPrev;
+			}
 		}
 	} finally {
 		loadingCargos.value = false;
@@ -1417,14 +1490,62 @@ const loadCandidatoMaestros = async () => {
 	}
 };
 
+const ensureCargoOption = (cargo: string | null | undefined) => {
+	const nombre = String(cargo || '').trim();
+	if (!nombre) return null;
+	const match = cargos.value.find(
+		(c) =>
+			c.nombre === nombre ||
+			c.external_code === nombre ||
+			String(c.nombre || '').toLowerCase() === nombre.toLowerCase()
+	);
+	if (match) return match.nombre || match.external_code;
+	cargos.value = [...cargos.value, { external_code: nombre, nombre }];
+	return nombre;
+};
+
+const ensureHorarioOption = (
+	horario: string | null | undefined,
+	labelHint?: string | null
+) => {
+	const raw = String(horario || '').trim();
+	if (!raw) return null;
+	const matched =
+		findOptionValue(horarioOptions.value, raw) ||
+		findOptionValue(maestros.horarios, raw) ||
+		findOptionValue(maestros.horarios, labelHint);
+	const code = matched || raw.match(/\(([A-Za-z0-9._-]+)\)\s*$/)?.[1] || raw;
+	const exists = horarioOptions.value.some((h: any) => String(h.value) === String(code));
+	if (!exists) {
+		const fromMaestros = (maestros.horarios || []).find(
+			(h: any) => String(h.value) === String(code)
+		);
+		const base =
+			String(labelHint || fromMaestros?.label || fromMaestros?.nombre || raw).trim() ||
+			code;
+		horariosEmpresa.value = [
+			...horariosEmpresa.value,
+			{
+				value: String(code),
+				label: base.includes(String(code)) ? base : `${base} (${code})`,
+			},
+		];
+	}
+	return String(code);
+};
+
 const onRazonSocialChange = async () => {
+	const cargoPrev = form.seccion1.cargo;
+	const horarioPrev = form.seccion3.horario;
+	const horarioLabelPrev =
+		labelOf(horarioOptions.value, horarioPrev) ||
+		labelOf(maestros.horarios, horarioPrev) ||
+		null;
+
 	form.seccion1.obra = null;
 	form.seccion1.centroCosto = null;
 	form.seccion1.descripcionCentroCosto = null;
-	form.seccion3.horario = null;
 	ubicaciones.value = [];
-	cargos.value = [];
-	horariosEmpresa.value = [];
 	if (!isEditMode.value) {
 		selectedPais.value = EXTERNAL_CODE_PAIS_GRUPO_2;
 	}
@@ -1440,12 +1561,21 @@ const onRazonSocialChange = async () => {
 			form.seccion1.centroCosto = null;
 			form.seccion1.descripcionCentroCosto = null;
 		}
+	} else {
+		cargos.value = [];
+		horariosEmpresa.value = [];
 	}
+	form.seccion1.cargo = ensureCargoOption(cargoPrev);
+	form.seccion3.horario = ensureHorarioOption(horarioPrev, horarioLabelPrev);
 };
 
 const loadHorariosEmpresa = async (empresaId: string) => {
 	loadingHorarios.value = true;
-	horariosEmpresa.value = [];
+	const horarioPrev = form.seccion3.horario;
+	const horarioLabelPrev =
+		labelOf(horarioOptions.value, horarioPrev) ||
+		labelOf(maestros.horarios, horarioPrev) ||
+		null;
 	try {
 		const response = await SipoConfigCargosService.getHorarios(empresaId);
 		if (response?.status === 200) {
@@ -1455,6 +1585,8 @@ const loadHorariosEmpresa = async (empresaId: string) => {
 					const code = String(h.external_code || '').trim();
 					const desc = String(h.descripcion || h.detalle || h.horario_trabajo || '').trim();
 					if (!code) return null;
+					const upper = desc.toUpperCase();
+					if (upper.includes('OBSOLETO') || upper.includes('OBSOLETA')) return null;
 					return {
 						value: code,
 						label: desc ? `${desc} (${code})` : code,
@@ -1465,6 +1597,9 @@ const loadHorariosEmpresa = async (empresaId: string) => {
 	} catch {
 		horariosEmpresa.value = [];
 	} finally {
+		if (horarioPrev) {
+			form.seccion3.horario = ensureHorarioOption(horarioPrev, horarioLabelPrev);
+		}
 		loadingHorarios.value = false;
 	}
 };
@@ -1474,6 +1609,8 @@ const onCentroCostoChange = () => {
 	form.seccion1.jefeUserId = null;
 	form.seccion1.jefeNombre = null;
 	form.seccion1.jefeCorreo = null;
+	form.seccion1.correoJefeDirecto = '';
+	clearEmailError('correoJefeDirecto');
 	void loadJefes();
 };
 
@@ -1484,6 +1621,9 @@ const onJefeChange = () => {
 	form.seccion1.jefeCorreo = item?.correo || null;
 	form.seccion1.correoJefeDirecto = item?.correo || '';
 	clearEmailError('correoJefeDirecto');
+	if (form.seccion1.correoJefeDirecto) {
+		void validateEmailField('correoJefeDirecto', form.seccion1.correoJefeDirecto);
+	}
 };
 
 const ensureJefeOption = () => {
@@ -1508,14 +1648,6 @@ const loadJefes = async () => {
 		loadingJefes.value = false;
 		ensureJefeOption();
 	}
-};
-
-const onDescripcionCentroChange = () => {
-	form.seccion1.centroCosto = form.seccion1.descripcionCentroCosto;
-	form.seccion1.jefeUserId = null;
-	form.seccion1.jefeNombre = null;
-	form.seccion1.jefeCorreo = null;
-	void loadJefes();
 };
 
 const onRegionChange = () => {
@@ -1576,6 +1708,19 @@ const formatFechaCl = (value: Date | null) => {
 	return value.toLocaleDateString('es-CL');
 };
 
+const formatFechaHoraCl = (value: string | null) => {
+	if (!value) return 'Sin registro de envío';
+	const d = new Date(value);
+	if (Number.isNaN(d.getTime())) return 'Sin registro de envío';
+	return `el ${d.toLocaleString('es-CL', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	})}`;
+};
+
 const formatSueldoPaso = (value: number | null) => {
 	if (value == null) return '—';
 	return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
@@ -1592,6 +1737,17 @@ const toDateIso = (value: Date | null) => {
 const appendField = (fd: FormData, key: string, value: unknown) => {
 	if (value === null || value === undefined || value === '') return;
 	fd.append(key, String(value));
+};
+
+const resolveDefaultCuentaGasto = (): string | null => {
+	const list = maestros.cuentas_gasto || [];
+	const match = list.find((o) => {
+		const v = String(o?.value || o?.label || '')
+			.trim()
+			.toUpperCase();
+		return v === 'OPL' || v.startsWith('OPL -') || v.startsWith('OPL-');
+	});
+	return match ? String(match.value) : null;
 };
 
 const labelOf = (options: any[] | undefined, value: unknown) => {
@@ -1693,6 +1849,7 @@ const resetFormAfterSave = () => {
 	form.seccion1.jefeNombre = null;
 	form.seccion1.jefeCorreo = null;
 	jefesOptions.value = [];
+	rutsConCargo.value = null;
 	form.seccion2.nombres = '';
 	form.seccion2.apellidoPaterno = '';
 	form.seccion2.apellidoMaterno = '';
@@ -1723,7 +1880,7 @@ const resetFormAfterSave = () => {
 	form.seccion2.numeroCuentaBancaria = '';
 	form.seccion3.sueldoLiquido = null;
 	form.seccion3.diasContrato = null;
-	form.seccion3.cuentaGasto = null;
+	form.seccion3.cuentaGasto = resolveDefaultCuentaGasto();
 	form.seccion3.tipoContrato = 'Plazo Fijo';
 	form.seccion3.horario = null;
 	form.seccion3.documentos.comprobanteDomicilio = null;
@@ -1804,12 +1961,19 @@ const generarEnlaceCandidato = async () => {
 		}
 		const id = Number(res?.data?.id || editingId.value);
 		if (!id) throw new Error('No se pudo guardar la ficha.');
+		if (res?.data?.estado) {
+			fichaEstado.value = String(res.data.estado);
+		} else {
+			fichaEstado.value = 'PENDIENTE_DATOS_COLABORADOR';
+		}
 		if (!isEditMode.value) {
 			await router.replace({ name: 'SipoFichaIngresoEdit', params: { id: String(id) } });
 		}
 		const acceso = await SipoFichasService.generarAcceso(id);
 		enlaceUrl.value = acceso.data?.url || '';
 		enlaceQr.value = acceso.data?.qr_base64 || '';
+		invitacionEnviadaAt.value =
+			acceso.data?.invitacion_enviada_at || acceso.data?.created_at || new Date().toISOString();
 		paso.value = 'enlace';
 		detenerPollFicha();
 		fichaPoll = setInterval(async () => {
@@ -1847,6 +2011,41 @@ const copiarEnlace = async () => {
 	if (!enlaceUrl.value) return;
 	await navigator.clipboard.writeText(enlaceUrl.value);
 	global.utl.genCustomeToast(ToastSeverityMessageEnum.SUCCESS, 'Ficha de Ingreso', 'Enlace copiado.');
+};
+
+const reenviarInvitacion = async () => {
+	const id = editingId.value;
+	if (!id) return;
+	if (!form.seccion1.correoColaborador) {
+		global.utl.genCustomeToast(
+			ToastSeverityMessageEnum.WARN,
+			'Ficha de Ingreso',
+			'Debes indicar el correo del colaborador.'
+		);
+		return;
+	}
+	reenviandoInvitacion.value = true;
+	try {
+		const res = await SipoFichasService.reenviarInvitacion(id);
+		if (Number(res?.status) !== 200) {
+			throw { response: { data: { message: (res as any)?.detail || 'No se pudo reenviar.' } } };
+		}
+		invitacionEnviadaAt.value =
+			res?.data?.invitacion_enviada_at || new Date().toISOString();
+		global.utl.genCustomeToast(
+			ToastSeverityMessageEnum.SUCCESS,
+			'Ficha de Ingreso',
+			'Invitación reenviada al colaborador.'
+		);
+	} catch (err: any) {
+		const msg =
+			err?.response?.data?.message ||
+			err?.response?.data?.detail ||
+			'No se pudo reenviar la invitación.';
+		global.utl.genCustomeToast(ToastSeverityMessageEnum.ERROR, 'Ficha de Ingreso', String(msg));
+	} finally {
+		reenviandoInvitacion.value = false;
+	}
 };
 
 onUnmounted(detenerPollFicha);
@@ -1977,10 +2176,6 @@ const openDocumento = async (url?: string) => {
 	}
 };
 
-const onPrint = () => {
-	window.print();
-};
-
 const parseDateValue = (value: unknown): Date | null => {
 	if (!value) return null;
 	if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
@@ -2035,6 +2230,8 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 			loadCargosYObras(form.seccion1.razonSocial),
 			loadHorariosEmpresa(form.seccion1.razonSocial),
 		]);
+	} else if (!cargos.value.length && Array.isArray(maestros.cargos)) {
+		cargos.value = maestros.cargos as { external_code: string; nombre: string }[];
 	}
 
 	const obraRaw = String(ficha.obra || '').trim();
@@ -2044,7 +2241,23 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 	form.seccion1.obra = obraMatch ? obraMatch.external_code || obraMatch.nombre : obraRaw || null;
 	form.seccion1.centroCosto = ficha.centro_costo_id || null;
 	form.seccion1.descripcionCentroCosto = ficha.centro_costo_id || null;
-	form.seccion1.cargo = ficha.cargo || null;
+
+	const cargoRaw = String(ficha.cargo || '').trim();
+	if (cargoRaw) {
+		const cargoMatch = cargos.value.find(
+			(c) =>
+				c.nombre === cargoRaw ||
+				c.external_code === cargoRaw ||
+				String(c.nombre || '').toLowerCase() === cargoRaw.toLowerCase()
+		);
+		if (!cargoMatch) {
+			cargos.value = [...cargos.value, { external_code: cargoRaw, nombre: cargoRaw }];
+		}
+		form.seccion1.cargo = cargoMatch?.nombre || cargoRaw;
+	} else {
+		form.seccion1.cargo = null;
+	}
+	await loadRutsPorCargo(form.seccion1.cargo);
 	form.seccion1.fechaIngreso = parseDateValue(ficha.fecha_ingreso);
 	form.seccion1.correoJefeDirecto = ficha.correo_jefe_directo || '';
 	form.seccion1.correoAdminObra = ficha.correo_admin_obra || '';
@@ -2107,13 +2320,34 @@ const fillFormFromFicha = async (ficha: Record<string, any>) => {
 	form.seccion3.diasContrato =
 		ficha.dias_contrato != null ? Number(ficha.dias_contrato) : null;
 	form.seccion3.cuentaGasto =
-		findOptionValue(maestros.cuentas_gasto, ficha.cuenta_gasto) || ficha.cuenta_gasto || null;
+		findOptionValue(maestros.cuentas_gasto, ficha.cuenta_gasto) ||
+		ficha.cuenta_gasto ||
+		resolveDefaultCuentaGasto();
 	form.seccion3.tipoContrato = ficha.tipo_contrato || 'Plazo Fijo';
-	form.seccion3.horario =
+	const horarioRaw = String(ficha.horario || ficha.horario_label || '').trim();
+	let horarioValue =
 		findOptionValue(horarioOptions.value, ficha.horario) ||
+		findOptionValue(horarioOptions.value, ficha.horario_label) ||
 		findOptionValue(maestros.horarios, ficha.horario) ||
-		ficha.horario ||
+		findOptionValue(maestros.horarios, ficha.horario_label) ||
 		null;
+	if (!horarioValue && horarioRaw) {
+		const codeMatch = horarioRaw.match(/\(([A-Za-z0-9._-]+)\)\s*$/);
+		horarioValue = String(ficha.horario || '').trim() || codeMatch?.[1] || horarioRaw;
+		const code = String(horarioValue);
+		const exists = horarioOptions.value.some((h: any) => String(h.value) === code);
+		if (!exists) {
+			const base = String(ficha.horario_label || horarioRaw).trim() || code;
+			horariosEmpresa.value = [
+				...horariosEmpresa.value,
+				{
+					value: code,
+					label: base.includes(code) ? base : `${base} (${code})`,
+				},
+			];
+		}
+	}
+	form.seccion3.horario = horarioValue;
 	form.seccion3.observaciones = ficha.observaciones || '';
 
 	if (form.seccion3.tipoContrato === 'Obra o Faena') {
@@ -2179,6 +2413,8 @@ const loadFichaForEdit = async () => {
 		const acceso = await SipoFichasService.generarAcceso(id);
 		enlaceUrl.value = acceso.data?.url || '';
 		enlaceQr.value = acceso.data?.qr_base64 || '';
+		invitacionEnviadaAt.value =
+			acceso.data?.invitacion_enviada_at || acceso.data?.created_at || null;
 		detenerPollFicha();
 		fichaPoll = setInterval(async () => {
 			const fresh = await SipoFichasService.getById(id);
@@ -2204,6 +2440,8 @@ onMounted(async () => {
 		]);
 		if (isEditMode.value) {
 			await loadFichaForEdit();
+		} else {
+			form.seccion3.cuentaGasto = resolveDefaultCuentaGasto();
 		}
 	} catch {
 		global.utl.genToast(global.tstType.SERVER_ERROR);
@@ -2246,6 +2484,82 @@ onMounted(async () => {
 	font-weight: 700;
 	text-transform: uppercase;
 	color: #374151;
+}
+
+.enlace-timeline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 0;
+	align-items: flex-start;
+	justify-content: space-between;
+	max-width: 36rem;
+}
+
+.enlace-timeline__item {
+	flex: 1 1 0;
+	min-width: 5.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.4rem;
+	position: relative;
+	color: #9ca3af;
+}
+
+.enlace-timeline__item:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	top: 0.85rem;
+	left: calc(50% + 1rem);
+	right: calc(-50% + 1rem);
+	height: 2px;
+	background: #e5e7eb;
+}
+
+.enlace-timeline__item--done:not(:last-child)::after,
+.enlace-timeline__item--active:not(:last-child)::after {
+	background: #dc2626;
+}
+
+.enlace-timeline__dot {
+	width: 1.75rem;
+	height: 1.75rem;
+	border-radius: 50%;
+	border: 2px solid #d1d5db;
+	background: #fff;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75rem;
+	font-weight: 700;
+	z-index: 1;
+}
+
+.enlace-timeline__item--done .enlace-timeline__dot {
+	border-color: #dc2626;
+	background: #dc2626;
+	color: #fff;
+}
+
+.enlace-timeline__item--active .enlace-timeline__dot {
+	border-color: #dc2626;
+	color: #dc2626;
+	box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.enlace-timeline__item--done,
+.enlace-timeline__item--active {
+	color: #252527;
+}
+
+.enlace-timeline__label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-align: center;
+}
+
+.word-break-all {
+	word-break: break-all;
 }
 
 .telefono-input-group {

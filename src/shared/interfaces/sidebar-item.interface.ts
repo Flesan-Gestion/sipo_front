@@ -6,6 +6,7 @@ export interface SidebarItemInterface {
     icon?: string
     sipoRolAdminOnly?: boolean
     ocultoSupervisor?: boolean
+    ocultoJefeTerreno?: boolean
     children?: SidebarItemChildrenInterface[]
 }
 
@@ -13,6 +14,7 @@ export interface SidebarItemChildrenInterface {
     name: string
     pathName: string
     sipoRolAdminOnly?: boolean
+    ocultoJefeTerreno?: boolean
 }
 
 export enum SidebarTypeItemEnum {

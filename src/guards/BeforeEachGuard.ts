@@ -4,6 +4,11 @@ import { useGlobalStore } from "../store/global";
 import { RolesEnum } from "../shared/enums/roles.enum";
 // Validaciones y Protección de rutas
 
+const homeForRol = (rolId: number) =>
+    rolId === RolesEnum.SUPERVISOR || rolId === RolesEnum.JEFE_TERRENO
+        ? { name: 'SipoFichaIngresoHistorial' as const }
+        : { name: 'SipoList' as const };
+
 const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, next) => {
     const global = useGlobalStore()
 
@@ -14,13 +19,13 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
         security.setUser(token)
     }
 
+    const rolId = Number(security.user?.sip_rol_id);
+    const esSoloFichas =
+        rolId === RolesEnum.SUPERVISOR || rolId === RolesEnum.JEFE_TERRENO;
+
     if (to.path.startsWith("/auth") && security.user) {
         global.utl.genToast(global.tstType.USER_ALREADY_LOGGED);
-        next(
-            Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR
-                ? { name: 'SipoFichaIngresoHistorial' }
-                : { name: 'SipoList' }
-        );
+        next(homeForRol(rolId));
         return;
     }
 
@@ -30,8 +35,7 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
         return;
     }
 
-    const esSupervisor = Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR;
-    const rutasBloqueadasSupervisor = [
+    const rutasBloqueadasSoloFichas = [
         'SipoList',
         'SipoCreate',
         'SipoEdit',
@@ -39,14 +43,22 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
         'SipoUsuarios',
         'SipoConfigCargos',
     ];
-    if (esSupervisor && rutasBloqueadasSupervisor.includes(String(to.name || ''))) {
+    if (esSoloFichas && rutasBloqueadasSoloFichas.includes(String(to.name || ''))) {
+        next({ name: 'SipoFichaIngresoHistorial' });
+        return;
+    }
+
+    if (
+        rolId === RolesEnum.JEFE_TERRENO &&
+        ['SipoFichaIngresoCreate', 'SipoFichaIngresoEdit'].includes(String(to.name || ''))
+    ) {
         next({ name: 'SipoFichaIngresoHistorial' });
         return;
     }
 
     if (to.meta.sipoRolAdminOnly && Number(security.user?.sip_rol_id) !== RolesEnum.ADMIN) {
         global.utl.genToast(global.tstType.PERMISSION_DENIED);
-        next(esSupervisor ? { name: 'SipoFichaIngresoHistorial' } : { name: 'SipoList' });
+        next(homeForRol(rolId));
         return;
     }
 
