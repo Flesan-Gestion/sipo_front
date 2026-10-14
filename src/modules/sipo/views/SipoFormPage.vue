@@ -544,9 +544,7 @@ const ubicacionOptions = computed(() =>
 	ubicaciones.value.map((u) => {
 		const code = u.external_code || u.nombre;
 		const nombre = u.nombre || code;
-		const label =
-			code && nombre && code !== nombre ? `${code} — ${nombre}` : nombre || code;
-		return { label, value: code };
+		return { label: nombre, value: code };
 	})
 );
 
