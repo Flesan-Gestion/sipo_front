@@ -579,10 +579,17 @@ const loadMaestros = async (rut?: string, pais?: string) => {
 		}
 		return;
 	}
+	void SipoService.getUbicaciones(rut)
+		.then((ubiRes) => {
+			ubicaciones.value =
+				Number(ubiRes?.status) === 200 ? ubiRes.data ?? [] : [];
+		})
+		.catch(() => {
+			ubicaciones.value = [];
+		});
 	const response = await SipoService.getMaestros(rut, paisActivo);
 	if (response?.status === 200) {
 		mergeEmpresasDetalle(response.data?.empresas ?? []);
-		ubicaciones.value = response.data?.ubicaciones ?? [];
 		cargos.value = response.data?.cargos ?? [];
 	}
 };

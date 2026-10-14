@@ -1464,15 +1464,25 @@ const loadRutsPorCargo = async (cargo: string | null | undefined) => {
 	}
 };
 
+const loadUbicaciones = async (rut: string) => {
+	try {
+		const response = await SipoService.getUbicaciones(rut);
+		ubicaciones.value =
+			Number(response?.status) === 200 ? response.data ?? [] : [];
+	} catch {
+		ubicaciones.value = [];
+	}
+};
+
 const loadCargosYObras = async (rut: string) => {
 	loadingCargos.value = true;
 	const cargoPrev = form.seccion1.cargo;
+	void loadUbicaciones(rut);
 	try {
 		const response = await SipoService.getMaestros(rut, selectedPais.value);
 		if (response?.status === 200) {
 			const filtradas = soloGrupo2(response.data?.empresas);
 			mergeEmpresasDetalle(filtradas);
-			ubicaciones.value = response.data?.ubicaciones ?? [];
 			const list = response.data?.cargos ?? [];
 			const nombre = String(cargoPrev || '').trim();
 			if (nombre) {

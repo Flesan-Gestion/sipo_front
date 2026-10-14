@@ -202,6 +202,15 @@ export class SipoService {
 		return response.data;
 	}
 
+	static async getUbicaciones(
+		rut: string
+	): Promise<ApiResponse<{ external_code: string; nombre: string }[]>> {
+		const response = await axios.get(`${SipoService.url}/sipo/ubicaciones/`, {
+			params: { rut },
+		});
+		return response.data;
+	}
+
 	static async getEmpresasPorCargo(
 		cargo: string
 	): Promise<ApiResponse<{ cargo: string; ruts: string[] }>> {
