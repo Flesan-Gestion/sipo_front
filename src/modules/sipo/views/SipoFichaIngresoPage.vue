@@ -1065,10 +1065,13 @@ const centroCostoOptions = computed(() =>
 );
 
 const obraOptions = computed(() =>
-	ubicaciones.value.map((u) => ({
-		label: u.nombre,
-		value: u.external_code || u.nombre,
-	}))
+	ubicaciones.value.map((u) => {
+		const code = u.external_code || u.nombre;
+		const nombre = u.nombre || code;
+		const label =
+			code && nombre && code !== nombre ? `${code} — ${nombre}` : nombre || code;
+		return { label, value: code };
+	})
 );
 
 const cargoOptions = computed(() =>
@@ -1414,15 +1417,29 @@ const onTelefonoInput = (event: Event) => {
 const soloGrupo2 = (lista: SipoMaestroEmpresa[] | undefined) =>
 	(lista || []).filter((e) => e.external_code_pais === EXTERNAL_CODE_PAIS_GRUPO_2);
 
+const mergeEmpresasDetalle = (detalle: SipoMaestroEmpresa[]) => {
+	if (!detalle.length) return;
+	const byCode = new Map(empresas.value.map((e) => [e.external_code, e]));
+	for (const emp of detalle) {
+		byCode.set(emp.external_code, emp);
+	}
+	empresas.value = Array.from(byCode.values());
+};
+
 const loadEmpresas = async (pais?: string) => {
 	loadingMaestros.value = true;
 	try {
-		const response = await SipoService.getMaestros(
-			undefined,
+		const response = await SipoService.getRazonesSociales(
 			pais || EXTERNAL_CODE_PAIS_GRUPO_2
 		);
 		if (response?.status === 200) {
-			empresas.value = soloGrupo2(response.data?.empresas);
+			const lista = (response.data || []).map((e) => ({
+				external_code: e.external_code,
+				nombre: e.nombre,
+				external_code_pais: e.external_code_pais || undefined,
+				unidades: [],
+			}));
+			empresas.value = soloGrupo2(lista);
 		}
 	} finally {
 		loadingMaestros.value = false;
@@ -1454,7 +1471,7 @@ const loadCargosYObras = async (rut: string) => {
 		const response = await SipoService.getMaestros(rut, selectedPais.value);
 		if (response?.status === 200) {
 			const filtradas = soloGrupo2(response.data?.empresas);
-			empresas.value = filtradas.length ? filtradas : empresas.value;
+			mergeEmpresasDetalle(filtradas);
 			ubicaciones.value = response.data?.ubicaciones ?? [];
 			const list = response.data?.cargos ?? [];
 			const nombre = String(cargoPrev || '').trim();

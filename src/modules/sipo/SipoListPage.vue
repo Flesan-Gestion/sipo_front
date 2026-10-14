@@ -90,10 +90,15 @@ const displayedRows = computed(() => {
 	return rows;
 });
 
-const loadMaestros = async (rut?: string) => {
-	const response = await SipoService.getMaestros(rut);
-	if (response?.status === 200 && !rut) {
-		empresas.value = response.data?.empresas ?? [];
+const loadMaestros = async () => {
+	const response = await SipoService.getRazonesSociales();
+	if (response?.status === 200) {
+		empresas.value = (response.data || []).map((e) => ({
+			external_code: e.external_code,
+			nombre: e.nombre,
+			external_code_pais: e.external_code_pais || undefined,
+			unidades: [],
+		}));
 	}
 };
 
@@ -129,8 +134,9 @@ const onServerFilterChange = () => {
 	void loadList();
 };
 
-const onEmpresaFilterChange = async () => {
-	if (filterEmpresa.value) await loadMaestros(filterEmpresa.value);
+const onEmpresaFilterChange = () => {
+	page.value = 1;
+	void loadList();
 };
 
 const formatAuditDate = (value?: string | null) => {

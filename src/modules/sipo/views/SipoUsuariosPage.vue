@@ -245,6 +245,10 @@ const dataTableConfig = ref<DataTableConfigInterface>({
 const usuarios = ref<SipoUsuario[]>([]);
 const perfiles = ref<SipoPerfilRol[]>([]);
 const empresas = ref<SipoMaestroEmpresa[]>([]);
+const centrosFlat = ref<
+	{ external_code: string; nombre: string; razon_social_id: string }[]
+>([]);
+const centrosLoadedFor = ref<Set<string>>(new Set());
 const isPageLoading = ref(false);
 const modalVisible = ref(false);
 const alcanceVisible = ref(false);
@@ -281,23 +285,14 @@ const empresaOptions = computed(() =>
 
 const centroOptions = computed(() => {
 	const selected = new Set(alcanceForm.empresas_ids);
-	const options: { label: string; value: string; nombre: string; empresa_rut: string }[] = [];
-	for (const empresa of empresas.value) {
-		if (!selected.has(empresa.external_code)) continue;
-		for (const uni of empresa.unidades || []) {
-			for (const dep of uni.departamentos || []) {
-				for (const cc of dep.centros_costo || []) {
-					options.push({
-						label: `${cc.external_code} — ${cc.nombre}`,
-						value: cc.external_code,
-						nombre: cc.nombre,
-						empresa_rut: empresa.external_code,
-					});
-				}
-			}
-		}
-	}
-	return options;
+	return centrosFlat.value
+		.filter((c) => selected.has(c.razon_social_id))
+		.map((c) => ({
+			label: c.nombre ? `${c.external_code} — ${c.nombre}` : c.external_code,
+			value: c.external_code,
+			nombre: c.nombre,
+			empresa_rut: c.razon_social_id,
+		}));
 });
 
 const assignedEmpresas = computed(() =>
@@ -318,13 +313,43 @@ const loadPerfiles = async () => {
 const loadMaestros = async () => {
 	loadingMaestros.value = true;
 	try {
-		const response = await SipoService.getMaestros();
+		const response = await SipoService.getRazonesSociales();
 		if (response?.status === 200) {
-			empresas.value = response.data?.empresas ?? [];
+			empresas.value = (response.data || []).map((e) => ({
+				external_code: e.external_code,
+				nombre: e.nombre,
+				external_code_pais: e.external_code_pais || undefined,
+				unidades: [],
+			}));
 		}
 	} finally {
 		loadingMaestros.value = false;
 	}
+};
+
+const ensureCentrosForEmpresas = async (empresaIds: string[]) => {
+	const missing = empresaIds.filter((id) => id && !centrosLoadedFor.value.has(id));
+	if (!missing.length) return;
+	await Promise.all(
+		missing.map(async (rut) => {
+			try {
+				const response = await SipoService.getCentrosCosto({ razonSocialId: rut });
+				if (response?.status === 200) {
+					const rows = (response.data || []).map((c) => ({
+						external_code: c.external_code,
+						nombre: c.nombre,
+						razon_social_id: c.razon_social_id || rut,
+					}));
+					centrosFlat.value = [
+						...centrosFlat.value.filter((c) => c.razon_social_id !== rut),
+						...rows,
+					];
+				}
+			} finally {
+				centrosLoadedFor.value.add(rut);
+			}
+		})
+	);
 };
 
 const load = async (managePageLoader = true) => {
@@ -354,9 +379,12 @@ const onModalSaved = async () => {
 	await reload();
 };
 
-const onEmpresasChange = () => {
+const onEmpresasChange = async () => {
+	await ensureCentrosForEmpresas(alcanceForm.empresas_ids);
 	const allowed = new Set(centroOptions.value.map((c) => c.value));
-	alcanceForm.centros_costo_ids = alcanceForm.centros_costo_ids.filter((id) => allowed.has(id));
+	alcanceForm.centros_costo_ids = alcanceForm.centros_costo_ids.filter((id) =>
+		allowed.has(id)
+	);
 };
 
 const openAlcance = async (row: SipoUsuario) => {
@@ -365,6 +393,7 @@ const openAlcance = async (row: SipoUsuario) => {
 	alcanceForm.centros_costo_ids = [...(row.centros_costo_ids || [])];
 	alcanceVisible.value = true;
 	if (!empresas.value.length) await loadMaestros();
+	await ensureCentrosForEmpresas(alcanceForm.empresas_ids);
 };
 
 const closeAlcance = () => {

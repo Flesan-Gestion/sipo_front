@@ -153,13 +153,51 @@ export class SipoService {
 
 	static async getMaestros(
 		rut?: string,
-		externalCodePais?: string
+		externalCodePais?: string,
+		opts?: { full?: boolean }
 	): Promise<ApiResponse<SipoMaestrosResponse>> {
 		const params: Record<string, string> = {};
 		if (rut) params.rut = rut;
 		if (externalCodePais) params.external_code_pais = externalCodePais;
+		if (opts?.full) params.full = '1';
 		const response = await axios.get(`${SipoService.url}/sipo/maestros/`, {
 			params: Object.keys(params).length ? params : undefined,
+		});
+		return response.data;
+	}
+
+	static async getRazonesSociales(
+		externalCodePais?: string
+	): Promise<
+		ApiResponse<
+			{ id: string; external_code: string; nombre: string; external_code_pais?: string | null }[]
+		>
+	> {
+		const response = await axios.get(`${SipoService.url}/sipo/razones-sociales/`, {
+			params: externalCodePais ? { external_code_pais: externalCodePais } : undefined,
+		});
+		return response.data;
+	}
+
+	static async getCentrosCosto(params: {
+		razonSocialId?: string;
+		externalCodePais?: string;
+	} = {}): Promise<
+		ApiResponse<
+			{
+				id: string;
+				external_code: string;
+				nombre: string;
+				razon_social_id?: string;
+				razon_social_nombre?: string;
+			}[]
+		>
+	> {
+		const response = await axios.get(`${SipoService.url}/sipo/centros-costo/`, {
+			params: {
+				razon_social_id: params.razonSocialId || undefined,
+				external_code_pais: params.externalCodePais || undefined,
+			},
 		});
 		return response.data;
 	}

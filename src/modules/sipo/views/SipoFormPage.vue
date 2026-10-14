@@ -541,8 +541,23 @@ const centroOptions = computed(() =>
 );
 
 const ubicacionOptions = computed(() =>
-	ubicaciones.value.map((u) => ({ label: u.nombre, value: u.external_code || u.nombre }))
+	ubicaciones.value.map((u) => {
+		const code = u.external_code || u.nombre;
+		const nombre = u.nombre || code;
+		const label =
+			code && nombre && code !== nombre ? `${code} — ${nombre}` : nombre || code;
+		return { label, value: code };
+	})
 );
+
+const mergeEmpresasDetalle = (detalle: typeof empresas.value) => {
+	if (!detalle.length) return;
+	const byCode = new Map(empresas.value.map((e) => [e.external_code, e]));
+	for (const emp of detalle) {
+		byCode.set(emp.external_code, emp);
+	}
+	empresas.value = Array.from(byCode.values());
+};
 
 const cargoOptions = computed(() =>
 	cargos.value.map((c) => ({ label: c.nombre, value: c.nombre || c.external_code }))
@@ -550,9 +565,23 @@ const cargoOptions = computed(() =>
 
 const loadMaestros = async (rut?: string, pais?: string) => {
 	const paisActivo = pais || selectedPais.value;
+	if (!rut) {
+		const response = await SipoService.getRazonesSociales(paisActivo);
+		if (response?.status === 200) {
+			empresas.value = (response.data || []).map((e) => ({
+				external_code: e.external_code,
+				nombre: e.nombre,
+				external_code_pais: e.external_code_pais || undefined,
+				unidades: [],
+			}));
+			ubicaciones.value = [];
+			cargos.value = [];
+		}
+		return;
+	}
 	const response = await SipoService.getMaestros(rut, paisActivo);
 	if (response?.status === 200) {
-		empresas.value = response.data?.empresas ?? [];
+		mergeEmpresasDetalle(response.data?.empresas ?? []);
 		ubicaciones.value = response.data?.ubicaciones ?? [];
 		cargos.value = response.data?.cargos ?? [];
 	}
