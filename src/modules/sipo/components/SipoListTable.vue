@@ -106,7 +106,7 @@
 						<Button
 							v-else
 							icon="pi pi-times"
-							severity="danger"
+							:severity="Number(data.cf_rrhh_sip_status) === 9 ? 'danger' : 'success'"
 							size="small"
 							disabled
 						/>
