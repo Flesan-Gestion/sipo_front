@@ -72,6 +72,7 @@ const avatarLoadFailed = ref(false);
 const isAdmin = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.ADMIN);
 const isSupervisor = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.SUPERVISOR);
 const isJefeTerreno = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.JEFE_TERRENO);
+const isUsuarioObra = computed(() => Number(security.user?.sip_rol_id) === RolesEnum.USUARIO_OBRA);
 
 const filterSidebarItems = (source: SidebarItemInterface[]): SidebarItemInterface[] =>
 	source
@@ -79,7 +80,8 @@ const filterSidebarItems = (source: SidebarItemInterface[]): SidebarItemInterfac
 			(item) =>
 				(!item.sipoRolAdminOnly || isAdmin.value) &&
 				!(item.ocultoSupervisor && isSupervisor.value) &&
-				!(item.ocultoJefeTerreno && isJefeTerreno.value)
+				!(item.ocultoJefeTerreno && isJefeTerreno.value) &&
+				!(item.ocultoUsuarioObra && isUsuarioObra.value)
 		)
 		.map((item) => {
 			if (!item.children?.length) return item;
@@ -88,7 +90,8 @@ const filterSidebarItems = (source: SidebarItemInterface[]): SidebarItemInterfac
 				children: item.children.filter(
 					(child) =>
 						(!child.sipoRolAdminOnly || isAdmin.value) &&
-						!(child.ocultoJefeTerreno && isJefeTerreno.value)
+						!(child.ocultoJefeTerreno && isJefeTerreno.value) &&
+						!(child.ocultoUsuarioObra && isUsuarioObra.value)
 				),
 			};
 		})

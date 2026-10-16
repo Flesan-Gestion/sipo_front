@@ -56,6 +56,16 @@ const beforeEachGuard: NavigationGuardWithThis<undefined> = async (to, from, nex
         return;
     }
 
+    const rutasFicha = [
+        'SipoFichaIngresoCreate',
+        'SipoFichaIngresoEdit',
+        'SipoFichaIngresoHistorial',
+    ];
+    if (rolId === RolesEnum.USUARIO_OBRA && rutasFicha.includes(String(to.name || ''))) {
+        next({ name: 'SipoList' });
+        return;
+    }
+
     if (to.meta.sipoRolAdminOnly && Number(security.user?.sip_rol_id) !== RolesEnum.ADMIN) {
         global.utl.genToast(global.tstType.PERMISSION_DENIED);
         next(homeForRol(rolId));
