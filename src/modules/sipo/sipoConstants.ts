@@ -125,6 +125,9 @@ export interface SipoObraDetail extends SipoObraListItem {
 	cf_rrhh_sip_update_date: string | null;
 	cf_rrhh_sip_update_user: string | null;
 	can_edit?: boolean;
+	can_aprobar_contratacion?: boolean;
+	can_toggle_seleccion?: boolean;
+	can_seleccionar_todos?: boolean;
 	acciones_estado?: SipoAccionEstado[];
 	candidatos_count?: number;
 	candidatos_seleccionados_count?: number;

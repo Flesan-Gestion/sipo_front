@@ -228,7 +228,7 @@
 					<SipoCandidatosPanel
 						:sip-id="sipId"
 						:can-edit="canSubmit"
-						:can-approve-contratacion="canApprove"
+						:can-approve-contratacion="canApproveContratacionObra"
 						:obra-status="detail?.cf_rrhh_sip_status ?? null"
 						:acciones-estado="detail?.acciones_estado ?? []"
 						:cargo-options="cargoOptions"
@@ -444,7 +444,8 @@ import {
 const global = useGlobalStore();
 const route = useRoute();
 const router = useRouter();
-const { canApprove } = useSipoPermissions();
+const { canApprove, canApproveContratacion } = useSipoPermissions();
+const canApproveContratacionObra = computed(() => canApproveContratacion(detail.value));
 
 const isCreate = computed(() => route.name === 'SipoCreate' || route.path.endsWith('/nueva'));
 const sipId = computed(() => Number(route.params.id || 0));
