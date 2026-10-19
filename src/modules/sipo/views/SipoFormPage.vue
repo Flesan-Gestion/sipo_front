@@ -512,11 +512,25 @@ const selectedEmpresa = computed(() =>
 	empresas.value.find((e) => e.external_code === form.controls.rut.value) || null
 );
 
+const ensureOption = (
+	opts: { label: string; value: string }[],
+	code: string | null | undefined,
+	label: string | null | undefined
+) => {
+	const value = (code || '').trim();
+	if (!value || opts.some((o) => o.value === value)) return opts;
+	return [{ label: (label || '').trim() || value, value }, ...opts];
+};
+
 const unidadOptions = computed(() =>
-	(selectedEmpresa.value?.unidades ?? []).map((u) => ({
-		label: u.nombre || u.external_code,
-		value: u.external_code,
-	}))
+	ensureOption(
+		(selectedEmpresa.value?.unidades ?? []).map((u) => ({
+			label: u.nombre || u.external_code,
+			value: u.external_code,
+		})),
+		form.controls.uni.value,
+		form.controls.nombre_uni.value
+	)
 );
 
 const selectedUnidad = computed(() =>
@@ -524,10 +538,14 @@ const selectedUnidad = computed(() =>
 );
 
 const departamentoOptions = computed(() =>
-	(selectedUnidad.value?.departamentos ?? []).map((d) => ({
-		label: d.nombre || d.external_code,
-		value: d.external_code,
-	}))
+	ensureOption(
+		(selectedUnidad.value?.departamentos ?? []).map((d) => ({
+			label: d.nombre || d.external_code,
+			value: d.external_code,
+		})),
+		form.controls.dep.value,
+		form.controls.nombre_dep.value
+	)
 );
 
 const selectedDepartamento = computed(() =>
@@ -535,10 +553,16 @@ const selectedDepartamento = computed(() =>
 );
 
 const centroOptions = computed(() =>
-	(selectedDepartamento.value?.centros_costo ?? []).map((c) => ({
-		label: `${c.external_code} ${c.nombre}`.trim(),
-		value: c.external_code,
-	}))
+	ensureOption(
+		(selectedDepartamento.value?.centros_costo ?? []).map((c) => ({
+			label: `${c.external_code} ${c.nombre}`.trim(),
+			value: c.external_code,
+		})),
+		form.controls.cc.value,
+		form.controls.nombre_cc.value
+			? `${form.controls.cc.value || ''} ${form.controls.nombre_cc.value}`.trim()
+			: form.controls.cc.value
+	)
 );
 
 const ubicacionOptions = computed(() =>
@@ -669,13 +693,37 @@ const buildPayload = (): SipoObraWritePayload => ({
 	external_code_pais: isCreate.value ? EXTERNAL_CODE_PAIS_GRUPO_2 : selectedPais.value,
 });
 
+const empresaTieneRutaObra = (
+	empresa: SipoMaestroEmpresa | undefined,
+	item: SipoObraDetail
+): boolean => {
+	if (!empresa) return false;
+	const uni = (item.cf_rrhh_sip_uni || '').trim();
+	const dep = (item.cf_rrhh_sip_dep || '').trim();
+	const cc = (item.cf_rrhh_sip_cc || '').trim();
+	if (!uni) return Boolean(empresa.unidades?.length);
+	const unidad = empresa.unidades?.find((u) => u.external_code === uni);
+	if (!unidad) return false;
+	if (!dep) return true;
+	const departamento = unidad.departamentos?.find((d) => d.external_code === dep);
+	if (!departamento) return false;
+	if (!cc) return true;
+	return (departamento.centros_costo ?? []).some((c) => c.external_code === cc);
+};
+
 const resolvePaisForDetail = async (item: SipoObraDetail) => {
-	selectedPais.value = EXTERNAL_CODE_PAIS_CHILE;
-	await loadMaestros(item.cf_rrhh_sip_rut || undefined, EXTERNAL_CODE_PAIS_CHILE);
-	const foundChile = empresas.value.some((e) => e.external_code === item.cf_rrhh_sip_rut);
-	if (foundChile) return;
+	const rut = item.cf_rrhh_sip_rut || undefined;
+	const candidatos = [EXTERNAL_CODE_PAIS_GRUPO_2, EXTERNAL_CODE_PAIS_CHILE];
+	for (const pais of candidatos) {
+		await loadMaestros(rut, pais);
+		const empresa = empresas.value.find((e) => e.external_code === item.cf_rrhh_sip_rut);
+		if (empresaTieneRutaObra(empresa, item)) {
+			selectedPais.value = pais;
+			return;
+		}
+	}
 	selectedPais.value = EXTERNAL_CODE_PAIS_GRUPO_2;
-	await loadMaestros(item.cf_rrhh_sip_rut || undefined, EXTERNAL_CODE_PAIS_GRUPO_2);
+	await loadMaestros(rut, EXTERNAL_CODE_PAIS_GRUPO_2);
 };
 
 const fillFromDetail = async (item: SipoObraDetail) => {
